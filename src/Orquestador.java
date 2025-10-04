@@ -3,7 +3,16 @@ public class Orquestador {
     public static void main(String[] args) {
 		BaseDeDatos principal = new BaseDeDatos();
 		BaseDeDatos backup = new BaseDeDatos();
-		
+		/*
+		Estructura de las tablas:
+		Tabla 1 (índice 0 en el ArrayList de tablas):
+		- 3 columnas: Clave primaria (columna 0), Clave foránea a tabla2 (columna 1), Dato entero (columna 2)
+		- 3 registros iniciales
+		Tabla 2 (índice 1 en el ArrayList de tablas):
+		- 2 columnas: Clave primaria (columna 0), Dato entero (columna 1)
+		- 5 registros iniciales
+		*/
+
 		ArrayList<Integer> fila1_0 = new ArrayList<>();
 		fila1_0.add(0); // clave primaria
 		fila1_0.add(0); // clave foránea a tabla2

@@ -1,83 +1,72 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
+
 public class ProcesoLE implements Runnable{
 
-    private int id;
-
-    public ProcesoLE(int id){
-        this.id=id;
+    public enum Accion {LECTURA, ESCRITURA, INSERCION};
+    private int row_id;
+    private Accion accion;
+    private int nuevoValor;
+    private BaseDeDatos bd;
+    private int table_id;
+    private int column_id;
+    private int nuevoValorForeingKey;
+    public ProcesoLE(BaseDeDatos bd, Accion accion, int table_id,int row_id, int column_id,int nuevoValor, int nuevoValorForeingKey){
+        this.bd = bd;
+        this.accion = accion;
+        this.row_id = row_id;
+        this.nuevoValor = nuevoValor;
+        this.table_id = table_id;
+        this.nuevoValorForeingKey = nuevoValorForeingKey;
     }
 
     public void run(){
 
-        for (int k=0; k<10; k++) {
-
-            int accion = (Math.random() < 0.5) ? 0 : 1; // 0 -> lectura | 1 -> escritura
-
-            if (accion == 0){
-
-                BaseDeDatos.lectura.acquireUninterruptibly();
-
-                int tabla = (Math.random() < 0.5) ? 0 : 1;
-                int tamanio = BaseDeDatos.obtenerTamanio(tabla);
-                if (tamanio != 0){
-                    int id = (int) (tamanio * Math.random());
-                    ArrayList<Integer> valor = BaseDeDatos.leer(tabla, id);
-                    System.out.println(id+". Lectura | tabla: "+tabla+" | id: "+id+" | Valor leido: "+valor.getLast());
-
-                    BaseDeDatos.randomDelay(1, 3);
-                }else{
-                    System.out.println("No hay datos para leer.");
-                }
-
-                BaseDeDatos.lectura.release();
+        if(accion == Accion.LECTURA){
+            this.leer(table_id, row_id);
+        }else if(accion == Accion.ESCRITURA){
+            this.escribir(table_id, row_id, column_id, nuevoValor);
+        }else if(accion == Accion.INSERCION){
+            if(table_id == 0){
+                ArrayList<Integer> fila = new ArrayList<Integer>(Collections.nCopies(3, 0));
+                fila.set(0, row_id);
+                fila.set(1, nuevoValorForeingKey);
+                fila.set(2, nuevoValor);
+                bd.escritura.acquireUninterruptibly();
+                for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+                bd.insertar(0,fila);
+                System.out.println(row_id+". Inserción | Nuevo valor: "+nuevoValor+" | Clave foránea: "+nuevoValorForeingKey);
+                for (int i=0; i<3; i++) bd.lectura.release();
+                bd.escritura.release();
             }else{
-                if (accion == 1){
-
-                    BaseDeDatos.escritura.acquireUninterruptibly();
-                    for (int i=0; i<3; i++) BaseDeDatos.lectura.acquireUninterruptibly();
-                    
-                    int valor = (int)(100 * Math.random());
-                    System.out.print(id+". Escritura para ");
-                    int operacion = (Math.random() < 0.5) ? 0 : 1; // 0 -> sumar | 1 -> actualizar
-                    if (operacion == 0){
-                        // BD.addAndGet(valor);
-                        int tabla = (Math.random() < 0.5) ? 0 : 1;
-                        ArrayList<Integer> registro = new ArrayList<Integer>(Collections.nCopies(5, 0));
-                        BaseDeDatos.insertar(tabla, registro);
-                        System.out.println("insetar | tabla: "+tabla+" | Nuevo valor: "+valor);
-                    }else{
-                        // BD.set(valor);
-                        int tabla = (Math.random() < 0.5) ? 0 : 1;
-                        int tamanio = BaseDeDatos.obtenerTamanio(tabla);
-                        // int id = (int) (tamanio * Math.random());
-                        // BaseDeDatos.actualizar(tabla, 0, id, valor);
-                        // System.out.println("actualziar | tabla: "+tabla+" | id:"+id+" | Nuevo valor: "+valor);
-
-                        if (tamanio != 0){
-                            int id = (int) (tamanio * Math.random());
-                            BaseDeDatos.actualizar(tabla, 0, id, valor);
-                            System.out.println("actualziar | tabla: "+tabla+" | id:"+id+" | Nuevo valor: "+valor);
-
-                            BaseDeDatos.randomDelay(1, 3);
-                        }else{
-                            System.out.println("No hay datos para actualizar.");
-                        }
-                    }
-                    // System.out.println("Nuevo dato: "+BD);
-
-                    BaseDeDatos.randomDelay(3, 6);
-
-                    BaseDeDatos.escritura.release();
-                    for (int i=0; i<3; i++) BaseDeDatos.lectura.release();
-                }else{
-                    System.out.println(id+". Acción no reconocida");
-                }
+                ArrayList<Integer> fila = new ArrayList<Integer>(Collections.nCopies(2, 0));
+                fila.set(0, row_id);
+                fila.set(1, nuevoValor);
+                bd.escritura.acquireUninterruptibly();
+                for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+                bd.insertar(1,fila);
+                System.out.println(row_id+". Inserción | Nuevo valor: "+nuevoValor);
+                for (int i=0; i<3; i++) bd.lectura.release();
+                bd.escritura.release();
             }
-
         }
+    }
 
+    private void leer(int table_id, int row_id){
+        bd.lectura.acquireUninterruptibly();
+        ArrayList<Integer> valor = bd.leer(table_id, row_id);
+        System.out.println(row_id+". Lectura | Valor leido: "+valor.getLast());
+        bd.lectura.release();
+    }
+
+    private void escribir(int table_id, int row_id, int column_id, int nuevoValor){
+        bd.escritura.acquireUninterruptibly();
+        for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        bd.actualizar(table_id, column_id, row_id, nuevoValor);
+        System.out.println(row_id+". Escritura | Nuevo valor: "+nuevoValor);
+        for (int i=0; i<3; i++) bd.lectura.release();
+        bd.escritura.release();
     }
     
 }

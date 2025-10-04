@@ -5,6 +5,8 @@ public class BaseDeDatos {
 
     public Semaphore lectura = new Semaphore(3);
     public Semaphore escritura = new Semaphore(1);
+
+
     public Semaphore accesoBD = new Semaphore(1);
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
@@ -85,7 +87,7 @@ public class BaseDeDatos {
 		try {
 			if (tabla == 0){
 				return tabla1.get(id);
-			else {
+			}else {
 				return tabla2.get(id);
 			}
 		}catch (IndexOutOfBoundsException e) {
