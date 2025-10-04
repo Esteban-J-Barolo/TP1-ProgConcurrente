@@ -1,5 +1,7 @@
-import java.util.ArrayList;// 
+import java.util.ArrayList;
+import java.util.Random;
 public class Orquestador {
+	private static Random rand = new Random();
     public static void main(String[] args) {
 		BaseDeDatos principal = new BaseDeDatos();
 		BaseDeDatos backup = new BaseDeDatos();
@@ -74,6 +76,7 @@ public class Orquestador {
 		System.out.println(principal);
 		System.out.println("Base de datos backup inicial (vacía):");
 		System.out.println(backup);
+		
 		BackUp backupThread = new BackUp(principal, backup);
 		GestorConsistencia gc = new GestorConsistencia(principal);
 
@@ -104,7 +107,87 @@ public class Orquestador {
 		System.out.println(backup);
 		principal.lectura.release();
 
+		for(int i=0; i<10; i++){
+			ProcesoLE proceso = null;
+			int tableId;
+
+			switch(elegirAccion()){
+				case LECTURA:
+					tableId = rand.nextInt(2);
+					if(tableId == 1){
+						proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rand.nextInt(3), 0, 0, 0);
+					}
+					if(tableId == 2){
+						proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rand.nextInt(5), 0, 0, 0);
+					}
+					
+					break;
+				case ESCRITURA:
+					tableId = rand.nextInt(2);
+					int rowId = rand.nextInt(principal.obtenerTamanio(tableId));
+					int valor;
+					int columnId;
+					if(tableId == 0){
+						columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
+						if(columnId==1){ // modifica la foreing key
+							valor = rand.nextInt(principal.obtenerTamanio(tableId)+2); 
+						}else{
+							valor = rand.nextInt(1000);
+						}
+					}else{
+						columnId = 1; // solo tiene una columna de datos esta tabla
+						valor = rand.nextInt(1000);
+					}
+					proceso = new ProcesoLE(principal, Accion.ESCRITURA , tableId , rowId , columnId,  valor, 0);
+					break;
+				case INSERCION:
+					tableId = rand.nextInt(2);
+					if(tableId == 0){
+						principal.lectura.acquireUninterruptibly();
+						int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
+						principal.lectura.release();
+						int nuevoValor = rand.nextInt(1000);
+						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, nuevoValorForeingKey);
+					}else if(tableId == 1){
+						int nuevoValor = rand.nextInt(1000);
+						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, 0);
+					}
+					break;
+				case ELIMINACION:
+					tableId = rand.nextInt(2);
+					if(tableId == 1){
+						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, rand.nextInt(3), 0, 0, 0);
+					}
+					if(tableId == 2){
+						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, rand.nextInt(5), 0, 0, 0);
+					}
+					break;
+				default:
+			}
+			if(proceso != null) new Thread(proceso).start();
+			else System.out.println("No se ha podido crear el proceso.");
+			try{
+				Thread.sleep(4000);
+			}catch(Exception e){}
+
+		}
+
+
+		System.out.println("Proceso de lectura y escritura");
+
+
+
+
+
 		
     }
+	
+	public static Accion elegirAccion(){
+		double rand = Math.random();
+		if(rand < 0.4) return Accion.LECTURA;
+		else if(rand < 0.8) return Accion.ESCRITURA;
+		else return Accion.INSERCION;
+	}
+	
 
 }

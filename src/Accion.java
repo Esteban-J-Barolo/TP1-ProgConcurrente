@@ -1,0 +1,1 @@
+public enum Accion {LECTURA, ESCRITURA, INSERCION, ELIMINACION};
