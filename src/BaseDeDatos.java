@@ -1,37 +1,16 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.concurrent.Semaphore;
 
 public class BaseDeDatos {
 
-    static Semaphore lectura = new Semaphore(3);
-    static Semaphore escritura = new Semaphore(1);
-	static Semaphore accesoBD = new Semaphore(3);
+    public Semaphore lectura = new Semaphore(3);
+    public Semaphore escritura = new Semaphore(1);
+    public Semaphore accesoBD = new Semaphore(1);
+	
+	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
+	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
 
-	private static ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
-	private static ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
-
-    public static void main(String[] args) {
-
-		int filas = 3;
-		int columnas = 4;
-
-		for (int i = 0; i < filas; i++) {
-			ArrayList<Integer> fila = new ArrayList<>(Collections.nCopies(columnas, 0));
-			tabla1.add(fila);
-			tabla2.add(fila);
-		}
-
-		for (int j=0; j<2; j++){ // generar varias instacias de BD
-
-			for(int i=0; i<5; i++) new Thread(new ProcesoLE(i+j)).start();
-
-			// new Thread(new BackUp(BD)).start();
-		}
-
-    }
-    
-	public static void randomDelay(float min, float max){
+	public void randomDelay(float min, float max){
 		int random = (int)(max * Math.random() + min);
 		try {
 			Thread.sleep(random * 10);
@@ -40,7 +19,7 @@ public class BaseDeDatos {
 		}
 	}
 
-	public static void actualizar(int tabla, int column, int id, Integer valor){
+	public void actualizar(int tabla, int column, int id, Integer valor){
 		if (tabla == 0){
 			tabla1.get(id).set(column, valor);
 		}else{
@@ -48,25 +27,73 @@ public class BaseDeDatos {
 		}
 	}
 
-	public static void insertar(int tabla, ArrayList<Integer> registro){
+	public void insertar(int tabla, ArrayList<Integer> registro){
 		if (tabla == 0){
-			registro.set(0, Integer.valueOf(tabla1.size()));
+			registro.set(0, tabla1.size());
 			tabla1.add(registro);
 		}else{
-			registro.set(0, Integer.valueOf(tabla2.size()));
+			registro.set(0, tabla2.size());
 			tabla2.add(registro);
 		}
 	}
-
-	public static ArrayList<Integer> leer(int tabla, int id){
+	
+	public void borrar(int tabla, int id){
 		if (tabla == 0){
-			return tabla1.get(id);
+			for(ArrayList<Integer> fila : tabla1) {
+				if (fila.get(0) == id) {
+					tabla1.remove(fila);
+					break;
+				}
+			}
 		}else{
-			return tabla2.get(id);
+			for(ArrayList<Integer> fila : tabla2) {
+				if (fila.get(0) == id) {
+					tabla2.remove(fila);
+					break;
+				}
+			}
 		}
 	}
 
-	public static int obtenerTamanio(int tabla){
+	public void drop(int tabla){
+		if (tabla == 0){
+			tabla1.clear();
+		}else{
+			tabla2.clear();
+		}
+	}
+
+	public ArrayList<Integer> leer(int tabla, int id){
+		if (tabla == 0){
+			for(ArrayList<Integer> fila : tabla1) {
+				if (fila.get(0) == id) {
+					return fila;
+				}
+			}
+		}else{
+			for(ArrayList<Integer> fila : tabla2) {
+				if (fila.get(0) == id) {
+					return fila;
+				}
+			}
+		}
+		
+		return new ArrayList<>();
+	}
+
+	public ArrayList<Integer> leer_fila(int tabla, int id){
+		try {
+			if (tabla == 0){
+				return tabla1.get(id);
+			else {
+				return tabla2.get(id);
+			}
+		}catch (IndexOutOfBoundsException e) {
+			return new ArrayList<>();
+		}
+	}
+
+	public int obtenerTamanio(int tabla){
 		if (tabla == 0){
 			return tabla1.size();
 		}else{
