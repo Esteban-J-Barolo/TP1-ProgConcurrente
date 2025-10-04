@@ -23,7 +23,7 @@ public class Orquestador {
 		// Registro 1: PK=1, FK=1, Dato=200
 		ArrayList<Integer> fila1_1 = new ArrayList<>();
 		fila1_1.add(1); // clave primaria
-		fila1_1.add(1); // clave foránea a tabla2
+		fila1_1.add(7); // clave foránea a tabla2
 		fila1_1.add(200); // dato inicial
 		principal.insertar(0,fila1_1);
 
@@ -70,6 +70,41 @@ public class Orquestador {
 		fila2_4.add(50); // dato inicial
 		principal.insertar(1,fila2_4);
         
+		System.out.println("Base de datos principal inicial:");
+		System.out.println(principal);
+		System.out.println("Base de datos backup inicial (vacía):");
+		System.out.println(backup);
+		BackUp backupThread = new BackUp(principal, backup);
+		GestorConsistencia gc = new GestorConsistencia(principal);
+
+		new Thread(backupThread).start();
+		System.out.println("Proceso de backup iniciado.");
+		try{
+			Thread.sleep(5000);
+		}catch(Exception e){
+
+		}
+		principal.lectura.acquireUninterruptibly();
+		System.out.println("Base de datos backup después del primer backup:");
+		System.out.println(backup);
+		principal.lectura.release();
+		
+		new Thread(gc).start();
+		System.out.println("Proceso de gestor de consistencia iniciado.");
+		try{
+			Thread.sleep(5000);
+		}catch(Exception e){
+
+		}
+		System.out.println("Bases de datos después de la primera verificación de consistencia:");
+		principal.lectura.acquireUninterruptibly();
+		System.out.println("Base de datos principal:");
+		System.out.println(principal);
+		System.out.println("Base de datos backup:");
+		System.out.println(backup);
+		principal.lectura.release();
+
+		
     }
 
 }

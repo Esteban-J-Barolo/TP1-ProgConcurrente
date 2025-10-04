@@ -9,7 +9,6 @@ public class GestorConsistencia implements Runnable {
 
         while (true) {
             bd.lectura.acquireUninterruptibly();
-
             System.out.println("Iniciando chequeo de consistencia ...");
             // metodo de chequeo de consistencia
 
@@ -17,7 +16,7 @@ public class GestorConsistencia implements Runnable {
             int tabla2 = 1; // tabla 2
             int tamanioTabla2 = bd.obtenerTamanio(tabla2);
             //obtengo la lista de pks en la tabla 2
-             ArrayList<Integer> pks = new ArrayList<>();
+            ArrayList<Integer> pks = new ArrayList<>();
             if(tamanioTabla2 != 0){          
                 for(int i=0; i<tamanioTabla2; i++){
                     ArrayList<Integer> fila = bd.leer(tabla2, i);
@@ -29,7 +28,7 @@ public class GestorConsistencia implements Runnable {
             ArrayList<Integer> filasEliminar = new ArrayList<>();
             if(tamanioTabla1 != 0){
                 for(int i=0; i<tamanioTabla1; i++){
-                    ArrayList<Integer> fila = bd.leer(tabla1, i);
+                    ArrayList<Integer> fila = bd.leer_fila(tabla1, i);
                     int fk = fila.get(1); //fk propagada en la tabla 2
                     if(pks.contains(fk)){
                         // la fk existe en la tabla 2, todo bien
@@ -46,16 +45,20 @@ public class GestorConsistencia implements Runnable {
             if(!filasEliminar.isEmpty()){
                 bd.escritura.acquireUninterruptibly();
                 for(int i=0;i<3;i++) bd.lectura.acquireUninterruptibly();
-                for(int j=0;j<filasEliminar.size();j++){
-                    bd.borrar(tabla1,filasEliminar.get(j));
+                for(int fila: filasEliminar){
+                    bd.borrar(tabla1, fila);
+                    System.out.println("Registro "+fila+" eliminado de tabla 1 por inconsistencia.");
                 }
             }
 
-            
-            bd.randomDelay(400, 700);
             System.out.println("Fin chequeo de consistencia");
-            bd.escritura.release();
             for (int i=0; i<3; i++) bd.lectura.release();
+            bd.escritura.release();
+            try {
+                Thread.sleep(10000); // espera 10 segundos antes de la proxima verificacion
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
 
         }
     

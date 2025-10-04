@@ -103,4 +103,17 @@ public class BaseDeDatos {
 		}
 	}
 
+	@Override
+	public String toString(){
+		System.out.println("Tabla 1:");
+		for (ArrayList<Integer> fila : tabla1) {
+			System.out.println(fila);
+		}
+		System.out.println("Tabla 2:");
+		for (ArrayList<Integer> fila : tabla2) {
+			System.out.println(fila);
+		}
+		return "";
+	}
+
 }

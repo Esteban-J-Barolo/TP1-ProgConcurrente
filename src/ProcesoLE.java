@@ -56,7 +56,7 @@ public class ProcesoLE implements Runnable{
     private void leer(int table_id, int row_id){
         bd.lectura.acquireUninterruptibly();
         ArrayList<Integer> valor = bd.leer(table_id, row_id);
-        System.out.println(row_id+". Lectura | Valor leido: "+valor.getLast());
+        System.out.println(row_id+". Lectura | Valor leido: "+valor.get(1));
         bd.lectura.release();
     }
 
@@ -68,5 +68,6 @@ public class ProcesoLE implements Runnable{
         for (int i=0; i<3; i++) bd.lectura.release();
         bd.escritura.release();
     }
+    
     
 }
