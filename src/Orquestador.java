@@ -1,10 +1,13 @@
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.Semaphore;
 public class Orquestador {
 	private static Random rand = new Random();
+	public static Semaphore procesosMaximos = new Semaphore(6, true);
     public static void main(String[] args) {
 		BaseDeDatos principal = new BaseDeDatos();
 		BaseDeDatos backup = new BaseDeDatos();
+		
 		/*
 		Estructura de las tablas:
 		Tabla 1 (índice 0 en el ArrayList de tablas):
@@ -109,7 +112,7 @@ public class Orquestador {
 
 
 		System.out.println("Iniciando procesos de lectura y escritura...");
-		for(int i=0; i<11; i++){
+		for(int i=0; i<50; i++){
 			ProcesoLE proceso = null;
 			int tableId;
 			int rowId;
@@ -145,7 +148,7 @@ public class Orquestador {
 							columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
 							if(columnId==1){ // modifica la foreing key
 							principal.lectura.acquireUninterruptibly();
-								valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
+							valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
 							principal.lectura.release();
 							}else{
 								valor = rand.nextInt(1000);
@@ -187,7 +190,7 @@ public class Orquestador {
 			if(proceso != null) new Thread(proceso, "Usuario: "+i).start();
 			else System.out.println("No se ha podido crear el proceso.");
 			try{
-				Thread.sleep(4000);
+				Thread.sleep(500);
 			}catch(Exception e){}
 			if(i%5==0 && i!=0){
 				principal.lectura.acquireUninterruptibly();
@@ -200,6 +203,13 @@ public class Orquestador {
 			}
 		}
 		System.out.println("Finalizando la creación procesos de lectura y escritura...");
+		principal.lectura.acquireUninterruptibly();
+		System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
+		System.out.println("Base de datos principal:");
+		System.out.println(principal);
+		System.out.println("Base de datos backup:");
+		System.out.println(backup);
+		principal.lectura.release();
     }
 	
 	public static Accion elegirAccion(){

@@ -3,11 +3,11 @@ import java.util.concurrent.Semaphore;
 
 public class BaseDeDatos {
 
-    public Semaphore lectura = new Semaphore(3);
-    public Semaphore escritura = new Semaphore(1);
+    public Semaphore lectura = new Semaphore(3, true);
+    public Semaphore escritura = new Semaphore(1, true);
 
 
-    public Semaphore accesoBD = new Semaphore(1);
+    //public Semaphore accesoBD = new Semaphore(1);
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
