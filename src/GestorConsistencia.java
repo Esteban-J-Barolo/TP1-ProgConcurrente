@@ -19,7 +19,7 @@ public class GestorConsistencia implements Runnable {
             ArrayList<Integer> pks = new ArrayList<>();
             if(tamanioTabla2 != 0){          
                 for(int i=0; i<tamanioTabla2; i++){
-                    ArrayList<Integer> fila = bd.leer(tabla2, i);
+                    ArrayList<Integer> fila = bd.leer_fila(tabla2, i);
                     int pk = fila.get(0);
                     pks.add(pk);
                 }

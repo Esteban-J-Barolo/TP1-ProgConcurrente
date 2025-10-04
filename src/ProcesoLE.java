@@ -40,15 +40,25 @@ public class ProcesoLE implements Runnable{
     private void leer(int table_id, int row_id){
         bd.lectura.acquireUninterruptibly();
         ArrayList<Integer> valor = bd.leer(table_id, row_id);
-        System.out.println(row_id+". Lectura | Valor leido: "+valor.get(1));
         bd.lectura.release();
+        if(valor.isEmpty()){
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe");
+        }else{
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" Valor leido: "+valor.get(1));
+        }
     }
 
     private void escribir(int table_id, int row_id, int column_id, int nuevoValor){
         bd.escritura.acquireUninterruptibly();
         for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        if(bd.leer(table_id, row_id).isEmpty()){
+            System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id+" No existe");
+            for (int i=0; i<3; i++) bd.lectura.release();
+            bd.escritura.release();
+            return;
+        }
         bd.actualizar(table_id, column_id, row_id, nuevoValor);
-        System.out.println(row_id+". Escritura | Nuevo valor: "+nuevoValor);
+        System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id +" Nuevo valor: "+nuevoValor);
         for (int i=0; i<3; i++) bd.lectura.release();
         bd.escritura.release();
     }
@@ -61,7 +71,7 @@ public class ProcesoLE implements Runnable{
         bd.escritura.acquireUninterruptibly();
         for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
         bd.insertar(0,fila);
-        System.out.println(row_id+". Inserción | Nuevo valor: "+nuevoValor+" | Clave foránea: "+nuevoValorForeingKey);
+        System.out.println(Thread.currentThread().getName()+": Inserción | Nuevo valor: "+nuevoValor+" | Clave foránea: "+nuevoValorForeingKey);
         for (int i=0; i<3; i++) bd.lectura.release();
         bd.escritura.release();
     }
@@ -73,7 +83,7 @@ public class ProcesoLE implements Runnable{
         bd.escritura.acquireUninterruptibly();
         for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
         bd.insertar(1,fila);
-        System.out.println(row_id+". Inserción | Nuevo valor: "+nuevoValor);
+        System.out.println(Thread.currentThread().getName()+": Inserción | Nuevo valor: "+nuevoValor);
         for (int i=0; i<3; i++) bd.lectura.release();
         bd.escritura.release();
     }
