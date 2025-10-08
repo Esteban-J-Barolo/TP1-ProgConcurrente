@@ -37,9 +37,27 @@ public class ProcesoLE implements Runnable{
     }
 
     private void leer(int table_id, int row_id){
-        bd.lectura.acquireUninterruptibly();
+        //Comienzo protocolo de lectura
+        bd.readTry.acquireUninterruptibly();
+        bd.maxLectores.acquireUninterruptibly();
+        bd.mutex.acquireUninterruptibly();
+        bd.readCount++;
+        if(bd.readCount == 1) {
+            bd.mutex.release();
+            bd.write.acquireUninterruptibly();
+        }else bd.mutex.release();
+        bd.readTry.release();
+        //Comienzo de la sección crítica|
         ArrayList<Integer> valor = bd.leer(table_id, row_id);
-        bd.lectura.release();
+        //Fin de la sección crítica|
+        //Comienzo protocolo de salida de lectura
+        bd.mutex.acquireUninterruptibly();
+        bd.readCount--;
+        if(bd.readCount==0)
+            bd.write.release();
+        bd.mutex.release();
+        bd.maxLectores.release();
+        //Fin protocolo de salida de lectura
         if(valor.isEmpty()){
             System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe");
         }else{
