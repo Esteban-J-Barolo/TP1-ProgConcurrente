@@ -66,18 +66,36 @@ public class ProcesoLE implements Runnable{
     }
 
     private void escribir(int table_id, int row_id, int column_id, int nuevoValor){
-        bd.escritura.acquireUninterruptibly();
-        for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        //Comienzo protocolo de escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount++;
+        if(bd.writeCount == 1){
+            bd.mutex.release();
+            bd.readTry.acquireUninterruptibly();
+        }else bd.mutex.release();
+        bd.write.acquireUninterruptibly();
+        //Fin protocolo de escritura
+        //Comienzo de la seccion crítica
         if(bd.leer(table_id, row_id).isEmpty()){
+            //Fin de la seccion crítica
+            //Comienzo protocolo fin escritura
+            bd.mutex.acquireUninterruptibly();
+            bd.writeCount--;
+            if(bd.writeCount == 0) bd.readTry.release();
+            bd.mutex.release();
+            //Fin protocolo fin escritura
             System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id+" No existe");
-            for (int i=0; i<3; i++) bd.lectura.release();
-            bd.escritura.release();
             return;
         }
         bd.actualizar(table_id, column_id, row_id, nuevoValor);
+        //Fin de la seccion crítica
+        //Comienzo protocolo fin escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount--;
+        if(bd.writeCount == 0) bd.readTry.release();
+        bd.mutex.release();
+        //Fin protocolo fin escritura
         System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id +" Nuevo valor: "+nuevoValor);
-        for (int i=0; i<3; i++) bd.lectura.release();
-        bd.escritura.release();
     }
     
     private void insertar_en_tabla1(int row_id, int nuevoValor, int nuevoValorForeingKey){
@@ -85,32 +103,71 @@ public class ProcesoLE implements Runnable{
         fila.set(0, row_id);
         fila.set(1, nuevoValorForeingKey);
         fila.set(2, nuevoValor);
-        bd.escritura.acquireUninterruptibly();
-        for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        //Comienzo protocolo de escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount++;
+        if(bd.writeCount == 1){
+            bd.mutex.release();
+            bd.readTry.acquireUninterruptibly();
+        }else bd.mutex.release();
+        bd.write.acquireUninterruptibly();
+        //Fin protocolo de escritura
+        //Comienzo de la seccion crítica
         bd.insertar(0,fila);
+        //Fin de la seccion crítica
+        //Comienzo protocolo fin escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount--;
+        if(bd.writeCount == 0) bd.readTry.release();
+        bd.mutex.release();
+        //Fin protocolo fin escritura
         System.out.println(Thread.currentThread().getName()+": Inserción | Nuevo valor: "+nuevoValor+" | Clave foránea: "+nuevoValorForeingKey);
-        for (int i=0; i<3; i++) bd.lectura.release();
-        bd.escritura.release();
     }
 
     private void insertar_en_tabla2(int row_id, int nuevoValor){
         ArrayList<Integer> fila = new ArrayList<Integer>(Collections.nCopies(2, 0));
         fila.set(0, row_id);
         fila.set(1, nuevoValor);
-        bd.escritura.acquireUninterruptibly();
-        for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        //Comienzo protocolo de escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount++;
+        if(bd.writeCount == 1){
+            bd.mutex.release();
+            bd.readTry.acquireUninterruptibly();
+        }else bd.mutex.release();
+        bd.write.acquireUninterruptibly();
+        //Fin protocolo de escritura
+        //Comienzo de la seccion crítica
         bd.insertar(1,fila);
+        //Fin de la seccion crítica
+        //Comienzo protocolo fin escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount--;
+        if(bd.writeCount == 0) bd.readTry.release();
+        bd.mutex.release();
+        //Fin protocolo fin escritura
         System.out.println(Thread.currentThread().getName()+": Inserción | Nuevo valor: "+nuevoValor);
-        for (int i=0; i<3; i++) bd.lectura.release();
-        bd.escritura.release();
     }
     private void eliminar(int table_id, int row_id){
-        bd.escritura.acquireUninterruptibly();
-        for (int i=0; i<3; i++) bd.lectura.acquireUninterruptibly();
+        //Comienzo protocolo de escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount++;
+        if(bd.writeCount == 1){
+            bd.mutex.release();
+            bd.readTry.acquireUninterruptibly();
+        }else bd.mutex.release();
+        bd.write.acquireUninterruptibly();
+        //Fin protocolo de escritura
+        //Comienzo de la seccion crítica
         bd.borrar(table_id, row_id);
         System.out.println(row_id+". Eliminación | Registro eliminado de la tabla "+table_id);
-        for (int i=0; i<3; i++) bd.lectura.release();
-        bd.escritura.release();
+        //Fin de la seccion crítica
+        //Comienzo protocolo fin escritura
+        bd.mutex.acquireUninterruptibly();
+        bd.writeCount--;
+        if(bd.writeCount == 0) bd.readTry.release();
+        bd.mutex.release();
+        //Fin protocolo fin escritura
     }
     
 }
