@@ -14,44 +14,41 @@ public class BackUp implements Runnable{
 
         while (true) {
 
-            principal.escritura.acquireUninterruptibly();
-            for (int i=0; i<3; i++) principal.lectura.acquireUninterruptibly();
+            // principal.escritura.acquireUninterruptibly();
+            // for (int i=0; i<3; i++) principal.lectura.acquireUninterruptibly();
 
-            backup.escritura.acquireUninterruptibly();
-            for (int i=0; i<3; i++) backup.lectura.acquireUninterruptibly();
+            // backup.escritura.acquireUninterruptibly();
+            // for (int i=0; i<3; i++) backup.lectura.acquireUninterruptibly();
 
-            System.out.println("Iniciando backup...");
-
-            // Limpiar el backup antes de copiar
-            backup.drop(0);
-            backup.drop(1);
-
-            // Copiar Tabla 1
-            for(int i=0; i<principal.obtenerTamanio(0); i++){
-                ArrayList<Integer> fila = principal.leer_fila(0, i);
-                if(!fila.isEmpty()){
-                    backup.insertar(0, new ArrayList<>(fila));
-                }
+            Orquestador.mutex.acquireUninterruptibly();
+            Orquestador.backupCount++;
+            if (Orquestador.backupCount == 1) {
+                Orquestador.permisoLectura.acquireUninterruptibly(); // primer backup bloquea lectores
+                Orquestador.escritura.acquireUninterruptibly(); // primer backup bloquea escritores
             }
+            Orquestador.mutex.release();
 
-            System.out.println("Tabla 1 copiada.");
+            Orquestador.backup.acquireUninterruptibly(); // pide permiso para hacer backup (bloquea si hay otro backup)
 
-            // Copiar Tabla 2
-            for(int i=0; i<principal.obtenerTamanio(1); i++){
-                ArrayList<Integer> fila = principal.leer_fila(1, i);
-                if(!fila.isEmpty()){
-                    backup.insertar(1, new ArrayList<>(fila));
-                }
+            hacer_backup(principal, backup);
+
+            Orquestador.backup.release(); // libera el permiso al salir
+            System.out.println("backup");
+
+            Orquestador.mutex.acquireUninterruptibly();
+            System.out.println("mutex");
+            Orquestador.backupCount--;
+            if (Orquestador.backupCount == 0) {
+                Orquestador.permisoLectura.release(); // último backup libera lectores
+                Orquestador.escritura.release(); // último backup libera escritores
             }
-            System.out.println("Tabla 2 copiada.");
+            Orquestador.mutex.release();
 
-            System.out.println("Backup Finalizado");
+            // backup.escritura.release();
+            // for (int i=0; i<3; i++) backup.lectura.release();
 
-            backup.escritura.release();
-            for (int i=0; i<3; i++) backup.lectura.release();
-
-            principal.escritura.release();
-            for (int i=0; i<3; i++) principal.lectura.release();
+            // principal.escritura.release();
+            // for (int i=0; i<3; i++) principal.lectura.release();
             
             try {
                 Thread.sleep(5000); // Esperar 5 segundos antes del próximo backup
@@ -60,6 +57,51 @@ public class BackUp implements Runnable{
             }
         }
 
+    }
+
+    private static void hacer_backup(BaseDeDatos principal, BaseDeDatos backup){
+        // System.out.println("-------------------------");
+        System.out.println("Iniciando backup...");
+
+        // System.out.println("Base de datos principal:");
+        // System.out.println(principal);
+        // System.out.println("Base de datos backup:");
+        // System.out.println(backup);
+
+        // Limpiar el backup antes de copiar
+        backup.drop(0);
+        backup.drop(1);
+
+        // Copiar Tabla 1
+        for(int i=0; i<principal.obtenerTamanio(0); i++){
+            ArrayList<Integer> fila = principal.leer_fila(0, i);
+            if(!fila.isEmpty()){
+                backup.insertar(0, new ArrayList<>(fila));
+            }
+        }
+
+        System.out.println("Tabla 1 copiada.");
+
+        // Copiar Tabla 2
+        for(int i=0; i<principal.obtenerTamanio(1); i++){
+            ArrayList<Integer> fila = principal.leer_fila(1, i);
+            if(!fila.isEmpty()){
+                backup.insertar(1, new ArrayList<>(fila));
+            }
+        }
+        System.out.println("Tabla 2 copiada.");
+
+        try{
+            Thread.sleep(500);
+        }catch(Exception e){}
+
+        System.out.println("Backup Finalizado");
+        
+        // System.out.println("Base de datos principal:");
+        // System.out.println(principal);
+        // System.out.println("Base de datos backup:");
+        // System.out.println(backup);
+        // System.out.println("-------------------------");
     }
     
 }

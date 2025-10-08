@@ -1,12 +1,29 @@
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+
 public class Orquestador {
+
 	private static Random rand = new Random();
-	public static Semaphore procesosMaximos = new Semaphore(6, true);
-    public static void main(String[] args) {
+	// public static Semaphore procesosMaximos = new Semaphore(6, true);
+	public static Semaphore escritura = new Semaphore(1, true);
+	public static Semaphore permisoLectura = new Semaphore(1, true);
+	public static Semaphore mutex = new Semaphore(1, true);
+	public static Semaphore lectoresMaximos = new Semaphore(3, true);
+	public static Semaphore backup = new Semaphore(1, true);
+	
+	public static int cantidadLectores = 0;
+	public static int cantidadEscritores = 0;
+	public static int backupCount = 0;
+
+
+	public static int[] secuencia_id_tabla = {3, 5}; // empieza en 3 porque hay 3 registros iniciales en tabla 1 y 5 registros iniciales
+    
+	public static void main(String[] args) {
+
 		BaseDeDatos principal = new BaseDeDatos();
 		BaseDeDatos backup = new BaseDeDatos();
+		
 		
 		/*
 		Estructura de las tablas:
@@ -17,63 +34,14 @@ public class Orquestador {
 		- 2 columnas: Clave primaria (columna 0), Dato entero (columna 1)
 		- 5 registros iniciales
 		*/
-
-		ArrayList<Integer> fila1_0 = new ArrayList<>();
-		fila1_0.add(0); // clave primaria
-		fila1_0.add(0); // clave foránea a tabla2
-		fila1_0.add(100); // dato inicial
-		principal.insertar(0, fila1_0);
-		
-
-		// Registro 1: PK=1, FK=1, Dato=200
-		ArrayList<Integer> fila1_1 = new ArrayList<>();
-		fila1_1.add(1); // clave primaria
-		fila1_1.add(7); // clave foránea a tabla2
-		fila1_1.add(200); // dato inicial
-		principal.insertar(0,fila1_1);
-
-		// Registro 2: PK=2, FK=2, Dato=300
-		ArrayList<Integer> fila1_2 = new ArrayList<>();
-		fila1_2.add(2); // clave primaria
-		fila1_2.add(2); // clave foránea a tabla2
-		fila1_2.add(300); // dato inicial
-		principal.insertar(0,fila1_2);
-
+		insertar_en_tabla1(principal);
 
 		//Tabla 2
 		// 5 registros iniciales
 		// Clave primaria en la columna 0
 		// Dato entero en la columna 1
+		insertar_en_tabla2(principal);
 
-		// Registro 0: PK=0, Dato=10
-		ArrayList<Integer> fila2_0 = new ArrayList<>();
-		fila2_0.add(0); // clave primaria
-		fila2_0.add(10); // dato inicial
-		principal.insertar(1,fila2_0);
-
-		// Registro 1: PK=1, Dato=20
-		ArrayList<Integer> fila2_1 = new ArrayList<>();
-		fila2_1.add(1); // clave primaria
-		fila2_1.add(20); // dato inicial
-		principal.insertar(1,fila2_1);
-
-		// Registro 2: PK=2, Dato=30
-		ArrayList<Integer> fila2_2 = new ArrayList<>();
-		fila2_2.add(2); // clave primaria
-		fila2_2.add(30); // dato inicial
-		principal.insertar(1,fila2_2);
-
-		// Registro 3: PK=3, Dato=40
-		ArrayList<Integer> fila2_3 = new ArrayList<>();
-		fila2_3.add(3); // clave primaria
-		fila2_3.add(40); // dato inicial
-		principal.insertar(1,fila2_3);
-
-		// Registro 4: PK=4, Dato=50
-		ArrayList<Integer> fila2_4 = new ArrayList<>();
-		fila2_4.add(4); // clave primaria
-		fila2_4.add(50); // dato inicial
-		principal.insertar(1,fila2_4);
         
 		System.out.println("Base de datos principal inicial:");
 		System.out.println(principal);
@@ -85,71 +53,91 @@ public class Orquestador {
 
 		new Thread(backupThread, "BackUp").start();
 		System.out.println("Proceso de backup iniciado.");
-		try{
-			Thread.sleep(5000);
-		}catch(Exception e){
+		// try{
+		// 	Thread.sleep(5000);
+		// }catch(Exception e){
 
-		}
-		principal.lectura.acquireUninterruptibly();
-		System.out.println("Base de datos backup después del primer backup:");
-		System.out.println(backup);
-		principal.lectura.release();
+		// }
+		// principal.lectura.acquireUninterruptibly();
+		// System.out.println("Base de datos backup después del primer backup:");
+		// System.out.println(backup);
+		// principal.lectura.release();
 		
 		new Thread(gc, "Gestor Consistencia").start();
 		System.out.println("Proceso de gestor de consistencia iniciado.");
-		try{
-			Thread.sleep(5000);
-		}catch(Exception e){
+		// try{
+		// 	Thread.sleep(5000);
+		// }catch(Exception e){
 
-		}
-		System.out.println("Bases de datos después de la primera verificación de consistencia:");
-		principal.lectura.acquireUninterruptibly();
-		System.out.println("Base de datos principal:");
-		System.out.println(principal);
-		System.out.println("Base de datos backup:");
-		System.out.println(backup);
-		principal.lectura.release();
+		// }
+		// System.out.println("Bases de datos después de la primera verificación de consistencia:");
+		// principal.lectura.acquireUninterruptibly();
+		// System.out.println("Base de datos principal:");
+		// System.out.println(principal);
+		// System.out.println("Base de datos backup:");
+		// System.out.println(backup);
+		// principal.lectura.release();
 
 
 		System.out.println("Iniciando procesos de lectura y escritura...");
 		for(int i=0; i<50; i++){
 			ProcesoLE proceso = null;
-			int tableId;
-			int rowId;
+			int tableId = rand.nextInt(2);
+			// int rowId;
 			int tamanioTabla;
 			switch(elegirAccion()){
 				case LECTURA:
-					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
-					tamanioTabla = principal.obtenerTamanio(tableId);
-					principal.lectura.release();
-					if(tamanioTabla>0){
-						rowId = rand.nextInt(tamanioTabla);
-						principal.lectura.release();
-						if(tableId == 0){
-							proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
-						}
-						if(tableId == 1){
-							proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
-						}
-						break;
-					}
+					// tableId = rand.nextInt(2);
+					// principal.lectura.acquireUninterruptibly();
+					// tamanioTabla = principal.obtenerTamanio(tableId);
+					// principal.lectura.release();
+					// if(tamanioTabla>0){
+					// 	rowId = rand.nextInt(tamanioTabla);
+						// principal.lectura.release();
+						// if(tableId == 0){
+						// 	proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
+						// }
+						// if(tableId == 1){
+						// 	proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
+						// }
+						// break;
+					// }
+						
+					proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, 0, 0, 0);
+					System.out.println(i+" Lectura");
+					break;
 				case ESCRITURA:
-					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
+					// tableId = rand.nextInt(2);
+					// principal.lectura.acquireUninterruptibly();
+					// tamanioTabla = principal.obtenerTamanio(tableId);
+					// principal.lectura.release();
+					// if(tamanioTabla>0){
+						// rowId = rand.nextInt(tamanioTabla);
+						// principal.lectura.release();
+						// int valor;
+						// int columnId;
+						// if(tableId == 0){
+							// columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
+							// if(columnId==1){ // modifica la foreing key
+							// principal.lectura.acquireUninterruptibly();
+								// valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
+							// principal.lectura.release();
+							// }else{
+							// 	valor = rand.nextInt(1000);
+							// }
+						// }else{
+							// columnId = 1; // solo tiene una columna de datos esta tabla
+							// valor = rand.nextInt(1000);
+						// }
+					// }
 					tamanioTabla = principal.obtenerTamanio(tableId);
-					principal.lectura.release();
+					int valor;
+					int columnId; // no se puede modificar la clave primaria
 					if(tamanioTabla>0){
-						rowId = rand.nextInt(tamanioTabla);
-						principal.lectura.release();
-						int valor;
-						int columnId;
 						if(tableId == 0){
-							columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
-							if(columnId==1){ // modifica la foreing key
-							principal.lectura.acquireUninterruptibly();
-							valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
-							principal.lectura.release();
+							columnId = rand.nextInt(2)+1;
+							if(columnId == 1){ // modifica la foreing key
+								valor = rand.nextInt(tamanioTabla);
 							}else{
 								valor = rand.nextInt(1000);
 							}
@@ -157,33 +145,49 @@ public class Orquestador {
 							columnId = 1; // solo tiene una columna de datos esta tabla
 							valor = rand.nextInt(1000);
 						}
-						proceso = new ProcesoLE(principal, Accion.ESCRITURA , tableId , rowId , columnId,  valor, 0);
-						break;
+						proceso = new ProcesoLE(principal, Accion.ESCRITURA , tableId , columnId,  valor, 0);
 					}
+					// else{ // la tabla no tiene registros
+					// 	columnId = 1;
+					// 	valor = secuencia_id_tabla[tableId]; 
+					// 	secuencia_id_tabla[tableId]++;
+					// }
+					System.out.println(i+" Escritura");
+					break;
 				case INSERCION:
-					tableId = rand.nextInt(2);
+					// tableId = rand.nextInt(2);
+					// if(tableId == 0){
+					// 	// principal.lectura.acquireUninterruptibly();
+					// 	int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
+					// 	// principal.lectura.release();
+					// 	int nuevoValor = rand.nextInt(1000);
+					// 	proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, nuevoValorForeingKey);
+					// }else{
+					// 	int nuevoValor = rand.nextInt(1000);
+					// 	proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, 0);
+					// }
 					if(tableId == 0){
-						principal.lectura.acquireUninterruptibly();
 						int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
-						principal.lectura.release();
 						int nuevoValor = rand.nextInt(1000);
-						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, nuevoValorForeingKey);
+						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , nuevoValor, nuevoValorForeingKey);
 					}else{
 						int nuevoValor = rand.nextInt(1000);
-						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, 0);
+						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId , 0, nuevoValor, 0);
 					}
+					System.out.println(i+" Incercion");
 					break;
 				case ELIMINACION:
-					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
-					rowId = rand.nextInt(principal.obtenerTamanio(tableId));
-					principal.lectura.release();
+					// tableId = rand.nextInt(2);
+					// principal.lectura.acquireUninterruptibly();
+					// rowId = rand.nextInt(principal.obtenerTamanio(tableId));
+					// principal.lectura.release();
 					if(tableId == 0){
-						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, rowId, 0, 0, 0);
+						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, 0, 0, 0);
 					}
 					if(tableId == 1){
-						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, rowId, 0, 0, 0);
+						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, 0, 0, 0);
 					}
+					System.out.println(i+" Eliminar");
 					break;
 				default:
 			}
@@ -192,24 +196,25 @@ public class Orquestador {
 			try{
 				Thread.sleep(500);
 			}catch(Exception e){}
-			if(i%5==0 && i!=0){
-				principal.lectura.acquireUninterruptibly();
-				System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
-				System.out.println("Base de datos principal:");
-				System.out.println(principal);
-				System.out.println("Base de datos backup:");
-				System.out.println(backup);
-				principal.lectura.release();
-			}
+			// if(i%5==0 && i!=0){
+			// 	// principal.lectura.acquireUninterruptibly();
+			// 	System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
+			// 	System.out.println("Base de datos principal:");
+			// 	System.out.println(principal);
+			// 	System.out.println("Base de datos backup:");
+			// 	System.out.println(backup);
+			// 	// principal.lectura.release();
+			// }
 		}
 		System.out.println("Finalizando la creación procesos de lectura y escritura...");
-		principal.lectura.acquireUninterruptibly();
-		System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
-		System.out.println("Base de datos principal:");
-		System.out.println(principal);
-		System.out.println("Base de datos backup:");
-		System.out.println(backup);
-		principal.lectura.release();
+		System.out.println();
+		// principal.lectura.acquireUninterruptibly();
+		// System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
+		// System.out.println("Base de datos principal:");
+		// System.out.println(principal);
+		// System.out.println("Base de datos backup:");
+		// System.out.println(backup);
+		// principal.lectura.release();
     }
 	
 	public static Accion elegirAccion(){
@@ -220,5 +225,59 @@ public class Orquestador {
 		else return Accion.ELIMINACION;
 	}
 	
+	public static void insertar_en_tabla1(BaseDeDatos bd){
+		// Registro 0: PK=0, FK=0, Dato=100
+		ArrayList<Integer> fila1_0 = new ArrayList<>();
+		fila1_0.add(0); // clave primaria
+		fila1_0.add(0); // clave foranea a tabla2
+		fila1_0.add(100); // dato inicial
+		bd.insertar(0,fila1_0);
+
+		// Registro 1: PK=1, FK=1, Dato=200
+		ArrayList<Integer> fila1_1 = new ArrayList<>();
+		fila1_1.add(1); // clave primaria
+		fila1_1.add(7); // clave foranea a tabla2
+		fila1_1.add(200); // dato inicial
+		bd.insertar(0,fila1_1);
+
+		// Registro 2: PK=2, FK=2, Dato=300
+		ArrayList<Integer> fila1_2 = new ArrayList<>();
+		fila1_2.add(2); // clave primaria
+		fila1_2.add(2); // clave foranea a tabla2
+		fila1_2.add(300); // dato inicial
+		bd.insertar(0,fila1_2);
+	}
+
+	public static void insertar_en_tabla2(BaseDeDatos bd){
+		// Registro 0: PK=0, Dato=1000
+		ArrayList<Integer> fila2_0 = new ArrayList<>();
+		fila2_0.add(0); // clave primaria
+		fila2_0.add(1000); // dato inicial
+		bd.insertar(1,fila2_0);
+
+		// Registro 1: PK=1, Dato=2000
+		ArrayList<Integer> fila2_1 = new ArrayList<>();
+		fila2_1.add(1); // clave primaria
+		fila2_1.add(2000); // dato inicial
+		bd.insertar(1,fila2_1);
+
+		// Registro 2: PK=2, Dato=3000
+		ArrayList<Integer> fila2_2 = new ArrayList<>();
+		fila2_2.add(2); // clave primaria
+		fila2_2.add(3000); // dato inicial
+		bd.insertar(1,fila2_2);
+
+		// Registro 3: PK=3, Dato=4000
+		ArrayList<Integer> fila2_3 = new ArrayList<>();
+		fila2_3.add(3); // clave primaria
+		fila2_3.add(4000); // dato inicial
+		bd.insertar(1,fila2_3);
+
+		// Registro 4: PK=4, Dato=5000
+		ArrayList<Integer> fila2_4 = new ArrayList<>();
+		fila2_4.add(4); // clave primaria
+		fila2_4.add(5000); // dato inicial
+		bd.insertar(1,fila2_4);
+	}
 
 }
