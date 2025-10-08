@@ -13,13 +13,21 @@ public class BackUp implements Runnable{
     public void run(){
 
         while (true) {
+            //acceso a las variables compartidas
+            principal.mutex.acquireUninterruptibly();
+            principal.backupCount++;
+            if(principal.backupCount == 1){
+                //primer backup bloquea entrada de lectores y escritores
+                principal.mutex.release();
+                principal.readTry.acquireUninterruptibly(); // bloquea nuevos lectores
+                principal.write.acquireUninterruptibly(); // bloquea escritores
+            } else{
+                principal.mutex.release();
+            }
+            //solicito acceso al backup
+            principal.backup.acquireUninterruptibly();
 
-            principal.escritura.acquireUninterruptibly();
-            for (int i=0; i<3; i++) principal.lectura.acquireUninterruptibly();
-
-            backup.escritura.acquireUninterruptibly();
-            for (int i=0; i<3; i++) backup.lectura.acquireUninterruptibly();
-
+            //Inicia la seccion critica
             System.out.println("Iniciando backup...");
 
             // Limpiar el backup antes de copiar
@@ -46,12 +54,18 @@ public class BackUp implements Runnable{
             System.out.println("Tabla 2 copiada.");
 
             System.out.println("Backup Finalizado");
-
-            backup.escritura.release();
-            for (int i=0; i<3; i++) backup.lectura.release();
-
-            principal.escritura.release();
-            for (int i=0; i<3; i++) principal.lectura.release();
+            //final seccion critica
+            //libero el semaforo de backup
+            principal.backup.release();
+            
+            //termino el backup
+            principal.mutex.acquireUninterruptibly();
+            principal.backupCount--;
+            if(principal.backupCount == 0){
+                principal.write.release();
+                principal.readTry.release();
+            }
+            principal.mutex.release();
             
             try {
                 Thread.sleep(5000); // Esperar 5 segundos antes del próximo backup
