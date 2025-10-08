@@ -8,15 +8,19 @@ public class GestorConsistencia implements Runnable {
     public void run(){
 
         while (true) {
-            bd.lectura.acquireUninterruptibly();
+            
             System.out.println("Iniciando chequeo de consistencia ...");
             // metodo de chequeo de consistencia
 
             int tabla1 = 0; // tabla 1
             int tabla2 = 1; // tabla 2
-            int tamanioTabla2 = bd.obtenerTamanio(tabla2);
+            ArrayList<Integer> filasEliminar = new ArrayList<>();
             //obtengo la lista de pks en la tabla 2
             ArrayList<Integer> pks = new ArrayList<>();
+            //Inicio protocolo de entrada en zona de lectura de gestor de consistencia
+            bd.readTry.acquireUninterruptibly();
+            //Fin protocolo de entrada en zona de lectura de gestor de consistencia
+            int tamanioTabla2 = bd.obtenerTamanio(tabla2);
             if(tamanioTabla2 != 0){          
                 for(int i=0; i<tamanioTabla2; i++){
                     ArrayList<Integer> fila = bd.leer_fila(tabla2, i);
@@ -25,7 +29,7 @@ public class GestorConsistencia implements Runnable {
                 }
             }
             int tamanioTabla1 = bd.obtenerTamanio(tabla1);
-            ArrayList<Integer> filasEliminar = new ArrayList<>();
+            
             if(tamanioTabla1 != 0){
                 for(int i=0; i<tamanioTabla1; i++){
                     ArrayList<Integer> fila = bd.leer_fila(tabla1, i);
@@ -41,19 +45,23 @@ public class GestorConsistencia implements Runnable {
                     
                 }
             }
-            bd.lectura.release();
             if(!filasEliminar.isEmpty()){
-                bd.escritura.acquireUninterruptibly();
-                for(int i=0;i<3;i++) bd.lectura.acquireUninterruptibly();
+                //Inicio protocolo de entrada en zona de escritura de gestor de consistencia
+                bd.write.acquireUninterruptibly();
+                //Fin protoclo de entrada en zona de escritura del gestor de consistencia
                 for(int fila: filasEliminar){
                     bd.borrar(tabla1, fila);
                     System.out.println("Registro "+fila+" eliminado de tabla 1 por inconsistencia.");
                 }
+                //Inicio protocolo de salida de zona de escritura de gestor de consistencia
+                bd.write.release();
+                //Fin protocolo de salida de zona de escritura de gestor de consistencia
             }
+            //Inicio protoclo de salida en zona de lectura de gestor de consistencia
+            bd.readTry.release();
+            //Fin protoclo de salida en zona de lectura de gestor de consistencia
 
             System.out.println("Fin chequeo de consistencia");
-            for (int i=0; i<3; i++) bd.lectura.release();
-            bd.escritura.release();
             try {
                 Thread.sleep(10000); // espera 10 segundos antes de la proxima verificacion
             } catch (InterruptedException e) {
