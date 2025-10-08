@@ -53,83 +53,23 @@ public class Orquestador {
 
 		new Thread(backupThread, "BackUp").start();
 		System.out.println("Proceso de backup iniciado.");
-		// try{
-		// 	Thread.sleep(5000);
-		// }catch(Exception e){
-
-		// }
-		// principal.lectura.acquireUninterruptibly();
-		// System.out.println("Base de datos backup después del primer backup:");
-		// System.out.println(backup);
-		// principal.lectura.release();
 		
 		new Thread(gc, "Gestor Consistencia").start();
 		System.out.println("Proceso de gestor de consistencia iniciado.");
-		// try{
-		// 	Thread.sleep(5000);
-		// }catch(Exception e){
-
-		// }
-		// System.out.println("Bases de datos después de la primera verificación de consistencia:");
-		// principal.lectura.acquireUninterruptibly();
-		// System.out.println("Base de datos principal:");
-		// System.out.println(principal);
-		// System.out.println("Base de datos backup:");
-		// System.out.println(backup);
-		// principal.lectura.release();
 
 
 		System.out.println("Iniciando procesos de lectura y escritura...");
 		for(int i=0; i<50; i++){
 			ProcesoLE proceso = null;
 			int tableId = rand.nextInt(2);
-			// int rowId;
 			int tamanioTabla;
 			switch(elegirAccion()){
 				case LECTURA:
-					// tableId = rand.nextInt(2);
-					// principal.lectura.acquireUninterruptibly();
-					// tamanioTabla = principal.obtenerTamanio(tableId);
-					// principal.lectura.release();
-					// if(tamanioTabla>0){
-					// 	rowId = rand.nextInt(tamanioTabla);
-						// principal.lectura.release();
-						// if(tableId == 0){
-						// 	proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
-						// }
-						// if(tableId == 1){
-						// 	proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
-						// }
-						// break;
-					// }
 						
 					proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, 0, 0, 0);
 					System.out.println(i+" Lectura");
 					break;
 				case ESCRITURA:
-					// tableId = rand.nextInt(2);
-					// principal.lectura.acquireUninterruptibly();
-					// tamanioTabla = principal.obtenerTamanio(tableId);
-					// principal.lectura.release();
-					// if(tamanioTabla>0){
-						// rowId = rand.nextInt(tamanioTabla);
-						// principal.lectura.release();
-						// int valor;
-						// int columnId;
-						// if(tableId == 0){
-							// columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
-							// if(columnId==1){ // modifica la foreing key
-							// principal.lectura.acquireUninterruptibly();
-								// valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
-							// principal.lectura.release();
-							// }else{
-							// 	valor = rand.nextInt(1000);
-							// }
-						// }else{
-							// columnId = 1; // solo tiene una columna de datos esta tabla
-							// valor = rand.nextInt(1000);
-						// }
-					// }
 					tamanioTabla = principal.obtenerTamanio(tableId);
 					int valor;
 					int columnId; // no se puede modificar la clave primaria
@@ -147,25 +87,9 @@ public class Orquestador {
 						}
 						proceso = new ProcesoLE(principal, Accion.ESCRITURA , tableId , columnId,  valor, 0);
 					}
-					// else{ // la tabla no tiene registros
-					// 	columnId = 1;
-					// 	valor = secuencia_id_tabla[tableId]; 
-					// 	secuencia_id_tabla[tableId]++;
-					// }
 					System.out.println(i+" Escritura");
 					break;
 				case INSERCION:
-					// tableId = rand.nextInt(2);
-					// if(tableId == 0){
-					// 	// principal.lectura.acquireUninterruptibly();
-					// 	int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
-					// 	// principal.lectura.release();
-					// 	int nuevoValor = rand.nextInt(1000);
-					// 	proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, nuevoValorForeingKey);
-					// }else{
-					// 	int nuevoValor = rand.nextInt(1000);
-					// 	proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, 0);
-					// }
 					if(tableId == 0){
 						int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
 						int nuevoValor = rand.nextInt(1000);
@@ -177,10 +101,6 @@ public class Orquestador {
 					System.out.println(i+" Incercion");
 					break;
 				case ELIMINACION:
-					// tableId = rand.nextInt(2);
-					// principal.lectura.acquireUninterruptibly();
-					// rowId = rand.nextInt(principal.obtenerTamanio(tableId));
-					// principal.lectura.release();
 					if(tableId == 0){
 						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, 0, 0, 0);
 					}
@@ -191,37 +111,24 @@ public class Orquestador {
 					break;
 				default:
 			}
+
 			if(proceso != null) new Thread(proceso, "Usuario: "+i).start();
+
 			else System.out.println("No se ha podido crear el proceso.");
+
 			try{
 				Thread.sleep(500);
 			}catch(Exception e){}
-			// if(i%5==0 && i!=0){
-			// 	// principal.lectura.acquireUninterruptibly();
-			// 	System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
-			// 	System.out.println("Base de datos principal:");
-			// 	System.out.println(principal);
-			// 	System.out.println("Base de datos backup:");
-			// 	System.out.println(backup);
-			// 	// principal.lectura.release();
-			// }
 		}
 		System.out.println("Finalizando la creación procesos de lectura y escritura...");
 		System.out.println();
-		// principal.lectura.acquireUninterruptibly();
-		// System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
-		// System.out.println("Base de datos principal:");
-		// System.out.println(principal);
-		// System.out.println("Base de datos backup:");
-		// System.out.println(backup);
-		// principal.lectura.release();
     }
 	
 	public static Accion elegirAccion(){
 		double rand = Math.random();
-		if(rand < 0.25) return Accion.LECTURA;
-		else if(rand < 0.5) return Accion.ESCRITURA;
-		else if(rand < 0.75) return Accion.INSERCION;
+		if(rand < 0.45) return Accion.LECTURA;
+		else if(rand < 0.55) return Accion.ESCRITURA;
+		else if(rand < 0.65) return Accion.INSERCION;
 		else return Accion.ELIMINACION;
 	}
 	

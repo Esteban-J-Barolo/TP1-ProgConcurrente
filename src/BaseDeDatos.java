@@ -39,10 +39,10 @@ public class BaseDeDatos {
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
 		if (tabla == 0){
-			registro.set(0, tabla1.size());
+			// registro.set(0, tabla1.size());
 			tabla1.add(registro);
 		}else{
-			registro.set(0, tabla2.size());
+			// registro.set(0, tabla2.size());
 			tabla2.add(registro);
 		}
 	}

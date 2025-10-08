@@ -23,20 +23,22 @@ public class BackUp implements Runnable{
             Orquestador.mutex.acquireUninterruptibly();
             Orquestador.backupCount++;
             if (Orquestador.backupCount == 1) {
+                Orquestador.mutex.release();
                 Orquestador.permisoLectura.acquireUninterruptibly(); // primer backup bloquea lectores
                 Orquestador.escritura.acquireUninterruptibly(); // primer backup bloquea escritores
+            }else{
+                Orquestador.mutex.release();
             }
-            Orquestador.mutex.release();
 
             Orquestador.backup.acquireUninterruptibly(); // pide permiso para hacer backup (bloquea si hay otro backup)
 
             hacer_backup(principal, backup);
 
             Orquestador.backup.release(); // libera el permiso al salir
-            System.out.println("backup");
+            // System.out.println("backup");
 
             Orquestador.mutex.acquireUninterruptibly();
-            System.out.println("mutex");
+            // System.out.println("mutex");
             Orquestador.backupCount--;
             if (Orquestador.backupCount == 0) {
                 Orquestador.permisoLectura.release(); // último backup libera lectores
@@ -92,7 +94,7 @@ public class BackUp implements Runnable{
         System.out.println("Tabla 2 copiada.");
 
         try{
-            Thread.sleep(500);
+            Thread.sleep(1500);
         }catch(Exception e){}
 
         System.out.println("Backup Finalizado");

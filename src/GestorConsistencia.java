@@ -11,18 +11,17 @@ public class GestorConsistencia implements Runnable {
     public void run(){
 
         while (true) {
-            // bd.lectura.acquireUninterruptibly();
 
-            Orquestador.escritura.acquireUninterruptibly();
+            // Orquestador.escritura.acquireUninterruptibly();
+            Orquestador.permisoLectura.acquireUninterruptibly();
 
             chequeo_de_consistencia(bd);
 
-            Orquestador.escritura.release();
+            // Orquestador.escritura.release();
+            Orquestador.permisoLectura.release();
             
-            // for (int i=0; i<3; i++) bd.lectura.release();
-            // bd.escritura.release();
             try {
-                Thread.sleep(10000); // espera 10 segundos antes de la proxima verificacion
+                Thread.sleep(5000); // espera 10 segundos antes de la proxima verificacion
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -32,9 +31,7 @@ public class GestorConsistencia implements Runnable {
     }
 
     private static void chequeo_de_consistencia(BaseDeDatos bd){
-            // bd.lectura.acquireUninterruptibly();
         System.out.println("Iniciando chequeo de consistencia ...");
-            // metodo de chequeo de consistencia
         System.out.println(bd);
 
         int tabla1 = 0; // tabla 1
@@ -68,12 +65,11 @@ public class GestorConsistencia implements Runnable {
         }else{
             System.out.println("Chequeo de consistencia: La tabla 1 está vacía, no hay registros.");
         }
-        // bd.lectura.release();
         if(!filasEliminar.isEmpty()){
-            // bd.escritura.acquireUninterruptibly();
-            // for(int i=0;i<3;i++) bd.lectura.acquireUninterruptibly();
             for(int fila: filasEliminar){
+                Orquestador.escritura.acquireUninterruptibly();
                 bd.borrar(tabla1, fila);
+                Orquestador.escritura.release();
                 System.out.println("Registro "+fila+" eliminado de tabla 1 por inconsistencia.");
             }
         }
