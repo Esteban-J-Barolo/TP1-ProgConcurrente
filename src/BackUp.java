@@ -38,6 +38,13 @@ public class BackUp implements Runnable{
             for(int i=0; i<principal.obtenerTamanio(0); i++){
                 ArrayList<Integer> fila = principal.leer_fila(0, i);
                 if(!fila.isEmpty()){
+                    /*  Si bien la base de datos de backup podría tener
+                     * condiciones de carrera. Y por lo tanto deberían de usarse
+                     * semáforos para proteger su acceso. A los fines de este TP
+                     * se asume que la base de datos de backup es accedida únicamente
+                     * por un hilo de backup. Y por lo tanto no es necesario
+                     * usar semáforos para proteger su acceso.
+                     */
                     backup.insertar(0, new ArrayList<>(fila));
                 }
             }

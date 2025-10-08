@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.Semaphore;
 
 public class BaseDeDatos {
@@ -39,10 +40,18 @@ public class BaseDeDatos {
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
 		if (tabla == 0){
-			registro.set(0, tabla1.size());
+			try{
+			registro.set(0, tabla1.getLast().get(0)+ 1);
+			}catch(NoSuchElementException e){
+				registro.set(0,0);
+			}
 			tabla1.add(registro);
 		}else{
-			registro.set(0, tabla2.size());
+			try{
+			registro.set(0, tabla2.getLast().get(0)+ 1);
+			}catch(NoSuchElementException e){
+				registro.set(0, 0);
+			}
 			tabla2.add(registro);
 		}
 	}
