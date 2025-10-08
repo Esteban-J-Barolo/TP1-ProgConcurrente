@@ -21,8 +21,6 @@ public class ProcesoLE implements Runnable{
     }
 
     public void run(){
-        Orquestador.procesosMaximos.acquireUninterruptibly();
-        try{
         if(accion == Accion.LECTURA){
             this.leer(table_id, row_id);
         }else if(accion == Accion.ESCRITURA){
@@ -35,9 +33,6 @@ public class ProcesoLE implements Runnable{
             }
         }else if(accion == Accion.ELIMINACION){
             this.eliminar(table_id, row_id);
-        }
-        }finally{
-            Orquestador.procesosMaximos.release();
         }
     }
 

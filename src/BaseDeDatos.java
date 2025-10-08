@@ -3,8 +3,16 @@ import java.util.concurrent.Semaphore;
 
 public class BaseDeDatos {
 
-    public Semaphore lectura = new Semaphore(3, true);
-    public Semaphore escritura = new Semaphore(1, true);
+	public Semaphore write = new Semaphore(1, true);
+	public Semaphore readTry = new Semaphore(1, true);
+	public Semaphore mutex = new Semaphore(1, true);
+	public Semaphore maxLectores = new Semaphore(3, true);
+	public Semaphore backup = new Semaphore(1);
+
+	public int readCount = 0;
+	public int writeCount = 0;
+	public int backupCount = 0;
+
 
 
     //public Semaphore accesoBD = new Semaphore(1);
