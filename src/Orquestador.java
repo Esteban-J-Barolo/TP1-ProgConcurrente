@@ -5,7 +5,6 @@ import java.util.concurrent.Semaphore;
 public class Orquestador {
 
 	private static Random rand = new Random();
-	// public static Semaphore procesosMaximos = new Semaphore(6, true);
 	public static Semaphore escritura = new Semaphore(1, true);
 	public static Semaphore permisoLectura = new Semaphore(1, true);
 	public static Semaphore mutex = new Semaphore(1, true);

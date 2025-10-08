@@ -41,10 +41,6 @@ public class ProcesoLE implements Runnable{
 
             // ---- Sección crítica de lectura ----
 
-            // try{
-            //     Thread.sleep(1500);
-            // }catch(Exception e){}
-
             tamanioTabla = bd.obtenerTamanio(table_id);
             row_id = rand.nextInt(tamanioTabla);
             this.leer(table_id, row_id);

@@ -12,12 +12,10 @@ public class GestorConsistencia implements Runnable {
 
         while (true) {
 
-            // Orquestador.escritura.acquireUninterruptibly();
             Orquestador.permisoLectura.acquireUninterruptibly();
 
             chequeo_de_consistencia(bd);
 
-            // Orquestador.escritura.release();
             Orquestador.permisoLectura.release();
             
             try {

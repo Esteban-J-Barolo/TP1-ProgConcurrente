@@ -1,13 +1,6 @@
 import java.util.ArrayList;
-// import java.util.concurrent.Semaphore;
 
 public class BaseDeDatos {
-
-    // public Semaphore lectura = new Semaphore(3, true);
-    // public Semaphore escritura = new Semaphore(1, true);
-
-
-    //public Semaphore accesoBD = new Semaphore(1);
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
@@ -23,13 +16,11 @@ public class BaseDeDatos {
 
 	public void actualizar(int tabla, int column, int id, Integer valor){
 		if (tabla == 0){
-			// tabla1.get(id).set(column, valor);
 			tabla1.stream()
 					.filter(fila -> fila.get(0) == id)
 					.findFirst()
 					.ifPresent(fila -> fila.set(column, valor));
 		}else{
-			// tabla2.get(id).set(column, valor);
 			tabla2.stream()
 					.filter(fila -> fila.get(0) == id)
 					.findFirst()
@@ -39,10 +30,8 @@ public class BaseDeDatos {
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
 		if (tabla == 0){
-			// registro.set(0, tabla1.size());
 			tabla1.add(registro);
 		}else{
-			// registro.set(0, tabla2.size());
 			tabla2.add(registro);
 		}
 	}
