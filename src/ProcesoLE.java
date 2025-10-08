@@ -79,6 +79,7 @@ public class ProcesoLE implements Runnable{
         if(bd.leer(table_id, row_id).isEmpty()){
             //Fin de la seccion crítica
             //Comienzo protocolo fin escritura
+            bd.write.release();
             bd.mutex.acquireUninterruptibly();
             bd.writeCount--;
             if(bd.writeCount == 0) bd.readTry.release();
@@ -90,6 +91,7 @@ public class ProcesoLE implements Runnable{
         bd.actualizar(table_id, column_id, row_id, nuevoValor);
         //Fin de la seccion crítica
         //Comienzo protocolo fin escritura
+        bd.write.release();
         bd.mutex.acquireUninterruptibly();
         bd.writeCount--;
         if(bd.writeCount == 0) bd.readTry.release();
@@ -116,6 +118,7 @@ public class ProcesoLE implements Runnable{
         bd.insertar(0,fila);
         //Fin de la seccion crítica
         //Comienzo protocolo fin escritura
+        bd.write.release();
         bd.mutex.acquireUninterruptibly();
         bd.writeCount--;
         if(bd.writeCount == 0) bd.readTry.release();
@@ -141,6 +144,7 @@ public class ProcesoLE implements Runnable{
         bd.insertar(1,fila);
         //Fin de la seccion crítica
         //Comienzo protocolo fin escritura
+        bd.write.release();
         bd.mutex.acquireUninterruptibly();
         bd.writeCount--;
         if(bd.writeCount == 0) bd.readTry.release();
@@ -163,6 +167,7 @@ public class ProcesoLE implements Runnable{
         System.out.println(row_id+". Eliminación | Registro eliminado de la tabla "+table_id);
         //Fin de la seccion crítica
         //Comienzo protocolo fin escritura
+        bd.write.release();
         bd.mutex.acquireUninterruptibly();
         bd.writeCount--;
         if(bd.writeCount == 0) bd.readTry.release();
