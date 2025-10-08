@@ -90,10 +90,10 @@ public class Orquestador {
 		}catch(Exception e){
 
 		}
-		principal.lectura.acquireUninterruptibly();
+		principal.readTry.acquireUninterruptibly();
 		System.out.println("Base de datos backup después del primer backup:");
 		System.out.println(backup);
-		principal.lectura.release();
+		principal.readTry.release();
 		
 		new Thread(gc, "Gestor Consistencia").start();
 		System.out.println("Proceso de gestor de consistencia iniciado.");
@@ -103,12 +103,12 @@ public class Orquestador {
 
 		}
 		System.out.println("Bases de datos después de la primera verificación de consistencia:");
-		principal.lectura.acquireUninterruptibly();
+		principal.readTry.acquireUninterruptibly();
 		System.out.println("Base de datos principal:");
 		System.out.println(principal);
 		System.out.println("Base de datos backup:");
 		System.out.println(backup);
-		principal.lectura.release();
+		principal.readTry.release();
 
 
 		System.out.println("Iniciando procesos de lectura y escritura...");
@@ -120,12 +120,11 @@ public class Orquestador {
 			switch(elegirAccion()){
 				case LECTURA:
 					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
+					principal.readTry.acquireUninterruptibly();
 					tamanioTabla = principal.obtenerTamanio(tableId);
-					principal.lectura.release();
+					principal.readTry.release();
 					if(tamanioTabla>0){
 						rowId = rand.nextInt(tamanioTabla);
-						principal.lectura.release();
 						if(tableId == 0){
 							proceso = new ProcesoLE(principal, Accion.LECTURA, tableId, rowId, 0, 0, 0);
 						}
@@ -136,20 +135,19 @@ public class Orquestador {
 					}
 				case ESCRITURA:
 					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
+					principal.readTry.acquireUninterruptibly();
 					tamanioTabla = principal.obtenerTamanio(tableId);
-					principal.lectura.release();
+					principal.readTry.release();
 					if(tamanioTabla>0){
 						rowId = rand.nextInt(tamanioTabla);
-						principal.lectura.release();
 						int valor;
 						int columnId;
 						if(tableId == 0){
 							columnId = rand.nextInt(2)+1; // no se puede modificar la clave primaria
 							if(columnId==1){ // modifica la foreing key
-							principal.lectura.acquireUninterruptibly();
+							principal.readTry.acquireUninterruptibly();
 							valor = rand.nextInt(principal.obtenerTamanio(tableId)); 
-							principal.lectura.release();
+							principal.readTry.release();
 							}else{
 								valor = rand.nextInt(1000);
 							}
@@ -163,9 +161,9 @@ public class Orquestador {
 				case INSERCION:
 					tableId = rand.nextInt(2);
 					if(tableId == 0){
-						principal.lectura.acquireUninterruptibly();
+						principal.readTry.acquireUninterruptibly();
 						int nuevoValorForeingKey = rand.nextInt(principal.obtenerTamanio(1)+2); // puede ser un valor inválido
-						principal.lectura.release();
+						principal.readTry.release();
 						int nuevoValor = rand.nextInt(1000);
 						proceso= new ProcesoLE(principal, Accion.INSERCION , tableId ,0 , 0, nuevoValor, nuevoValorForeingKey);
 					}else{
@@ -175,9 +173,9 @@ public class Orquestador {
 					break;
 				case ELIMINACION:
 					tableId = rand.nextInt(2);
-					principal.lectura.acquireUninterruptibly();
+					principal.readTry.acquireUninterruptibly();
 					rowId = rand.nextInt(principal.obtenerTamanio(tableId));
-					principal.lectura.release();
+					principal.readTry.release();
 					if(tableId == 0){
 						proceso = new ProcesoLE(principal, Accion.ELIMINACION, tableId, rowId, 0, 0, 0);
 					}
@@ -193,23 +191,23 @@ public class Orquestador {
 				Thread.sleep(500);
 			}catch(Exception e){}
 			if(i%5==0 && i!=0){
-				principal.lectura.acquireUninterruptibly();
+				principal.readTry.acquireUninterruptibly();
 				System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
 				System.out.println("Base de datos principal:");
 				System.out.println(principal);
 				System.out.println("Base de datos backup:");
 				System.out.println(backup);
-				principal.lectura.release();
+				principal.readTry.release();
 			}
 		}
 		System.out.println("Finalizando la creación procesos de lectura y escritura...");
-		principal.lectura.acquireUninterruptibly();
+		principal.readTry.acquireUninterruptibly();
 		System.out.println("Mostrando estado de las bases de datos tras varias operaciones:");
 		System.out.println("Base de datos principal:");
 		System.out.println(principal);
 		System.out.println("Base de datos backup:");
 		System.out.println(backup);
-		principal.lectura.release();
+		principal.readTry.release();
     }
 	
 	public static Accion elegirAccion(){
