@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class GestorConsistencia implements Runnable {
 
@@ -64,6 +65,7 @@ public class GestorConsistencia implements Runnable {
             System.out.println("Chequeo de consistencia: La tabla 1 está vacía, no hay registros.");
         }
         if(!filasEliminar.isEmpty()){
+            Collections.sort(filasEliminar, Collections.reverseOrder());
             for(int fila: filasEliminar){
                 Orquestador.escritura.acquireUninterruptibly();
                 bd.borrar(tabla1, fila);

@@ -55,7 +55,7 @@ public class Orquestador {
 		back.start();
 		System.out.println("Proceso de backup iniciado.");
 		
-		Thread gestorCons =new Thread(gc, "Gestor Consistencia");
+		Thread gestorCons = new Thread(gc, "Gestor Consistencia");
 		gestorCons.setDaemon(true);
 		gestorCons.start();
 		System.out.println("Proceso de gestor de consistencia iniciado.");

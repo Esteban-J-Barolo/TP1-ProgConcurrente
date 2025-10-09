@@ -44,7 +44,8 @@ public class BaseDeDatos {
 			// 		break;
 			// 	}
 			// }
-			tabla1.removeIf(fila -> fila.get(0) == id);
+			// tabla1.removeIf(fila -> fila.get(0) == id);
+			tabla1.remove(id);
 		}else{
 			// for(ArrayList<Integer> fila : tabla2) {
 			// 	if (fila.get(0) == id) {
@@ -52,7 +53,8 @@ public class BaseDeDatos {
 			// 		break;
 			// 	}
 			// }
-			tabla2.removeIf(fila -> fila.get(0) == id);
+			// tabla2.removeIf(fila -> fila.get(0) == id);
+			tabla2.remove(id);
 		}
 	}
 

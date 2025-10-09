@@ -42,6 +42,19 @@ public class ProcesoLE implements Runnable{
             // ---- Sección crítica de lectura ----
 
             tamanioTabla = bd.obtenerTamanio(table_id);
+
+            if (tamanioTabla == 0) {
+
+                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+                
+                Orquestador.mutex.acquireUninterruptibly();
+                Orquestador.cantidadLectores--;
+                if (Orquestador.cantidadLectores == 0) Orquestador.escritura.release(); // último lector libera escritores
+                Orquestador.mutex.release();
+                Orquestador.lectoresMaximos.release(); // libera el cupo al salir
+                return;
+            }
+
             row_id = rand.nextInt(tamanioTabla);
             this.leer(table_id, row_id);
             
@@ -68,6 +81,17 @@ public class ProcesoLE implements Runnable{
             // ---- Sección crítica de escritura ----
 
             tamanioTabla = bd.obtenerTamanio(table_id);
+            if (tamanioTabla == 0) {
+
+                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+                
+                Orquestador.mutex.acquireUninterruptibly();
+                Orquestador.cantidadEscritores--;
+                if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
+                Orquestador.mutex.release();
+                Orquestador.escritura.release(); // libera el permiso al salir
+                return;
+            }
             row_id = rand.nextInt(tamanioTabla);
             this.escribir(table_id, row_id, column_id, nuevoValor);
             Orquestador.escritura.release(); // libera el permiso al salir
@@ -121,6 +145,17 @@ public class ProcesoLE implements Runnable{
             // ---- Sección crítica de escritura ----
 
             tamanioTabla = bd.obtenerTamanio(table_id);
+            if (tamanioTabla == 0) {
+
+                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+                
+                Orquestador.mutex.acquireUninterruptibly();
+                Orquestador.cantidadEscritores--;
+                if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
+                Orquestador.mutex.release();
+                Orquestador.escritura.release(); // libera el permiso al salir
+                return;
+            }
             row_id = rand.nextInt(tamanioTabla);
             this.eliminar(table_id, row_id);
             
