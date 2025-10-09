@@ -38,19 +38,21 @@ public class BaseDeDatos {
 	
 	public void borrar(int tabla, int id){
 		if (tabla == 0){
-			for(ArrayList<Integer> fila : tabla1) {
-				if (fila.get(0) == id) {
-					tabla1.remove(fila);
-					break;
-				}
-			}
+			// for(ArrayList<Integer> fila : tabla1) {
+			// 	if (fila.get(0) == id) {
+			// 		// tabla1.remove(fila);
+			// 		break;
+			// 	}
+			// }
+			tabla1.removeIf(fila -> fila.get(0) == id);
 		}else{
-			for(ArrayList<Integer> fila : tabla2) {
-				if (fila.get(0) == id) {
-					tabla2.remove(fila);
-					break;
-				}
-			}
+			// for(ArrayList<Integer> fila : tabla2) {
+			// 	if (fila.get(0) == id) {
+			// 		tabla2.remove(fila);
+			// 		break;
+			// 	}
+			// }
+			tabla2.removeIf(fila -> fila.get(0) == id);
 		}
 	}
 

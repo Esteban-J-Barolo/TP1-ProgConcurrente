@@ -50,10 +50,14 @@ public class Orquestador {
 		BackUp backupThread = new BackUp(principal, backup);
 		GestorConsistencia gc = new GestorConsistencia(principal);
 
-		new Thread(backupThread, "BackUp").start();
+		Thread back = new Thread(backupThread, "BackUp");
+		back.setDaemon(true);
+		back.start();
 		System.out.println("Proceso de backup iniciado.");
 		
-		new Thread(gc, "Gestor Consistencia").start();
+		Thread gestorCons =new Thread(gc, "Gestor Consistencia");
+		gestorCons.setDaemon(true);
+		gestorCons.start();
 		System.out.println("Proceso de gestor de consistencia iniciado.");
 
 
@@ -125,9 +129,9 @@ public class Orquestador {
 	
 	public static Accion elegirAccion(){
 		double rand = Math.random();
-		if(rand < 0.45) return Accion.LECTURA;
-		else if(rand < 0.55) return Accion.ESCRITURA;
-		else if(rand < 0.65) return Accion.INSERCION;
+		if(rand < 0.50) return Accion.LECTURA;
+		else if(rand < 0.60) return Accion.ESCRITURA;
+		else if(rand < 0.80) return Accion.INSERCION;
 		else return Accion.ELIMINACION;
 	}
 	

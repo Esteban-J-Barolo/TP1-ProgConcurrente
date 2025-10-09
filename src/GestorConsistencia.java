@@ -14,7 +14,7 @@ public class GestorConsistencia implements Runnable {
 
             Orquestador.permisoLectura.acquireUninterruptibly();
 
-            chequeo_de_consistencia(bd);
+            chequeo_de_consistencia();
 
             Orquestador.permisoLectura.release();
             
@@ -28,7 +28,7 @@ public class GestorConsistencia implements Runnable {
     
     }
 
-    private static void chequeo_de_consistencia(BaseDeDatos bd){
+    private void chequeo_de_consistencia(){
         System.out.println("Iniciando chequeo de consistencia ...");
         System.out.println(bd);
 
@@ -77,5 +77,6 @@ public class GestorConsistencia implements Runnable {
         }catch(Exception e){}
 
         System.out.println("Fin chequeo de consistencia");
+        System.out.println(bd);
     }
 }
