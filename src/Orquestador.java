@@ -6,10 +6,15 @@ public class Orquestador {
 
 	private static Random rand = new Random();
 	public static Semaphore escritura = new Semaphore(1, true);
+	public static Semaphore backUp = new Semaphore(1, true);
 	public static Semaphore permisoLectura = new Semaphore(1, true);
-	public static Semaphore mutex = new Semaphore(1, true);
+	public static Semaphore permisoEscritura = new Semaphore(1, true);
+	public static Semaphore mutexPriEscritores = new Semaphore(1, true);
+	public static Semaphore mutexPriBackUp = new Semaphore(1, true);
+	public static Semaphore mutexLectura = new Semaphore(1, true);
+	public static Semaphore mutexEscritura = new Semaphore(1, true);
+	public static Semaphore mutexBackUp = new Semaphore(1, true);
 	public static Semaphore lectoresMaximos = new Semaphore(3, true);
-	public static Semaphore backup = new Semaphore(1, true);
 	
 	public static int cantidadLectores = 0;
 	public static int cantidadEscritores = 0;
@@ -129,9 +134,9 @@ public class Orquestador {
 	
 	public static Accion elegirAccion(){
 		double rand = Math.random();
-		if(rand < 0.50) return Accion.LECTURA;
-		else if(rand < 0.60) return Accion.ESCRITURA;
-		else if(rand < 0.80) return Accion.INSERCION;
+		if(rand < 0.40) return Accion.LECTURA;
+		else if(rand < 0.50) return Accion.ESCRITURA;
+		else if(rand < 0.90) return Accion.INSERCION;
 		else return Accion.ELIMINACION;
 	}
 	

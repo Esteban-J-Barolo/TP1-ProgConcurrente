@@ -14,29 +14,21 @@ public class BackUp implements Runnable{
 
         while (true) {
 
-            Orquestador.mutex.acquireUninterruptibly();
+            Orquestador.mutexBackUp.acquireUninterruptibly(); // protege la variable backupCount
             Orquestador.backupCount++;
-            if (Orquestador.backupCount == 1) {
-                Orquestador.mutex.release();
-                Orquestador.permisoLectura.acquireUninterruptibly(); // primer backup bloquea lectores
-                Orquestador.escritura.acquireUninterruptibly(); // primer backup bloquea escritores
-            }else{
-                Orquestador.mutex.release();
-            }
+            if (Orquestador.backupCount == 1) Orquestador.permisoEscritura.acquireUninterruptibly();
+            Orquestador.mutexBackUp.release();
 
-            Orquestador.backup.acquireUninterruptibly(); // pide permiso para hacer backup (bloquea si hay otro backup)
+            Orquestador.backUp.acquireUninterruptibly(); // pide permiso para hacer backup
 
-            hacer_backup(principal, backup);
+            hacer_backup(principal, backup); // realiza el backup
 
-            Orquestador.backup.release(); // libera el permiso al salir
+            Orquestador.backUp.release();
 
-            Orquestador.mutex.acquireUninterruptibly();
+            Orquestador.mutexBackUp.acquireUninterruptibly(); // protege la variable backupCount
             Orquestador.backupCount--;
-            if (Orquestador.backupCount == 0) {
-                Orquestador.permisoLectura.release(); // último backup libera lectores
-                Orquestador.escritura.release(); // último backup libera escritores
-            }
-            Orquestador.mutex.release();
+            if (Orquestador.backupCount == 0) Orquestador.permisoEscritura.release();
+            Orquestador.mutexBackUp.release();
             
             try {
                 Thread.sleep(5000); // Esperar 5 segundos antes del próximo backup
@@ -48,6 +40,7 @@ public class BackUp implements Runnable{
     }
 
     private static void hacer_backup(BaseDeDatos principal, BaseDeDatos backup){
+            
         System.out.println("Iniciando backup...");
 
         // Limpiar el backup antes de copiar

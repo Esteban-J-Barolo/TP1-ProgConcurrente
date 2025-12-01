@@ -1,9 +1,12 @@
 import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class BaseDeDatos {
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
+
+	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	public void randomDelay(float min, float max){
 		int random = (int)(max * Math.random() + min);
@@ -15,47 +18,38 @@ public class BaseDeDatos {
 	}
 
 	public void actualizar(int tabla, int column, int id, Integer valor){
-		if (tabla == 0){
-			tabla1.stream()
-					.filter(fila -> fila.get(0) == id)
-					.findFirst()
-					.ifPresent(fila -> fila.set(column, valor));
-		}else{
-			tabla2.stream()
-					.filter(fila -> fila.get(0) == id)
-					.findFirst()
-					.ifPresent(fila -> fila.set(1, valor));
-		}
+        lock.writeLock().lock();
+        try {
+            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+            for (ArrayList<Integer> fila : tablaRef) {
+                if (fila.get(0) == id) {
+                    fila.set(column, valor);
+                    break;
+                }
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
 	}
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
-		if (tabla == 0){
-			tabla1.add(registro);
-		}else{
-			tabla2.add(registro);
-		}
+        lock.writeLock().lock();
+        try {
+            if (tabla == 0) tabla1.add(registro);
+            else tabla2.add(registro);
+        } finally {
+            lock.writeLock().unlock();
+        }
 	}
 	
 	public void borrar(int tabla, int id){
-		if (tabla == 0){
-			// for(ArrayList<Integer> fila : tabla1) {
-			// 	if (fila.get(0) == id) {
-			// 		// tabla1.remove(fila);
-			// 		break;
-			// 	}
-			// }
-			// tabla1.removeIf(fila -> fila.get(0) == id);
-			tabla1.remove(id);
-		}else{
-			// for(ArrayList<Integer> fila : tabla2) {
-			// 	if (fila.get(0) == id) {
-			// 		tabla2.remove(fila);
-			// 		break;
-			// 	}
-			// }
-			// tabla2.removeIf(fila -> fila.get(0) == id);
-			tabla2.remove(id);
-		}
+        lock.writeLock().lock();
+        try {
+            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+            tablaRef.removeIf(fila -> fila.get(0) == id);
+        } finally {
+            lock.writeLock().unlock();
+        }
 	}
 
 	public void drop(int tabla){
@@ -67,21 +61,18 @@ public class BaseDeDatos {
 	}
 
 	public ArrayList<Integer> leer(int tabla, int id){
-		if (tabla == 0){
-			for(ArrayList<Integer> fila : tabla1) {
-				if (fila.get(0) == id) {
-					return fila;
-				}
-			}
-		}else{
-			for(ArrayList<Integer> fila : tabla2) {
-				if (fila.get(0) == id) {
-					return fila;
-				}
-			}
-		}
-		
-		return new ArrayList<>();
+        lock.readLock().lock();
+        try {
+            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+            for (ArrayList<Integer> fila : tablaRef) {
+                if (fila.get(0) == id) {
+                    return new ArrayList<>(fila); // copia defensiva
+                }
+            }
+            return new ArrayList<>();
+        } finally {
+            lock.readLock().unlock();
+        }
 	}
 
 	public ArrayList<Integer> leer_fila(int tabla, int id){
