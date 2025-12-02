@@ -83,7 +83,7 @@ public class Orquestador {
 					int columnId; // no se puede modificar la clave primaria
 					if(tamanioTabla>0){
 						if(tableId == 0){
-							columnId = rand.nextInt(2)+1;
+							columnId = 2;
 							if(columnId == 1){ // modifica la foreing key
 								valor = rand.nextInt(tamanioTabla);
 							}else{

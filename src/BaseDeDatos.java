@@ -4,6 +4,8 @@ public class BaseDeDatos {
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
+	private int nextIdTabla1 = 0;
+	private int nextIdTabla2 = 0;
 
 	public void randomDelay(float min, float max){
 		int random = (int)(max * Math.random() + min);
@@ -25,8 +27,13 @@ public class BaseDeDatos {
 	}
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
-		if (tabla == 0) tabla1.add(registro);
-		else tabla2.add(registro);
+		if (tabla == 0){
+			tabla1.add(registro);
+			nextIdTabla1++;
+		}else{
+			tabla2.add(registro);
+			nextIdTabla2++;
+		} 
 	}
 	
 	public void borrar(int tabla, int id){
@@ -46,7 +53,7 @@ public class BaseDeDatos {
 		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
 		for (ArrayList<Integer> fila : tablaRef) {
 			if (fila.get(0) == id) {
-				return new ArrayList<>(fila); // copia defensiva
+				return new ArrayList<>(fila);
 			}
 		}
 		return new ArrayList<>();
@@ -69,6 +76,14 @@ public class BaseDeDatos {
 			return tabla1.size();
 		}else{
 			return tabla2.size();
+		}
+	}
+
+	public int obtenerIds(int tabla){
+		if (tabla == 0){
+			return nextIdTabla1;
+		}else{
+			return nextIdTabla2;
 		}
 	}
 

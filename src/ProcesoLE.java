@@ -66,8 +66,9 @@ public class ProcesoLE implements Runnable{
             if (tamanioTabla <= 0) {
                 System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
             }else{
-                row_id = rand.nextInt(tamanioTabla);
-                this.escribir(table_id, row_id, column_id, nuevoValor);
+                int idsTabla = bd.obtenerIds(table_id);
+                row_id = rand.nextInt(idsTabla);
+                this.escribir(table_id, row_id);
             }
             Orquestador.escritura.release(); // libera el permiso al salir
 
@@ -137,20 +138,20 @@ public class ProcesoLE implements Runnable{
     private void leer(int table_id, int row_id){
         ArrayList<Integer> valor = bd.leer(table_id, row_id);
         if(valor.isEmpty()){
-            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe, tabla "+table_id);
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe, tabla "+(table_id+1));
         }else{
-            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" tabla "+table_id+" Valor leido: "+valor.get(1));
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" tabla "+(table_id+1)+" Valor leido: "+((valor.size() == 3) ? valor.get(2) : valor.get(1)));
         }
     }
 
-    private void escribir(int table_id, int row_id, int column_id, int nuevoValor){
+    private void escribir(int table_id, int row_id){
         if(bd.leer(table_id, row_id).isEmpty()){
-            System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id+" No existe, tabla "+table_id);
+            System.out.println(Thread.currentThread().getName()+": Escritura | Id: "+ row_id+" No existe, tabla "+(table_id+1));
 
             return;
         }
         bd.actualizar(table_id, column_id, row_id, nuevoValor);
-        System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id +" Nuevo valor: "+nuevoValor+", tabla "+table_id);
+        System.out.println(Thread.currentThread().getName()+": Escritura | Id: "+ row_id +" Nuevo valor: "+nuevoValor+", tabla "+(table_id+1));
     }
     
     private void insertar_en_tabla1(int row_id, int nuevoValor, int nuevoValorForeingKey){
@@ -171,7 +172,7 @@ public class ProcesoLE implements Runnable{
     }
     private void eliminar(int table_id, int row_id){
         bd.borrar(table_id, row_id);
-        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+row_id+". Registro eliminado de la tabla "+(table_id+1));
+        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+(row_id+1)+". Registro eliminado de la tabla "+(table_id+1));
     }
     
 }

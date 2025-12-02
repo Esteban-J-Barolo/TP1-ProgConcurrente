@@ -62,7 +62,7 @@ public class GestorConsistencia implements Runnable {
 
             
             try {
-                Thread.sleep(1000); // espera 10 segundos antes de la proxima verificacion
+                Thread.sleep(10000); // espera 10 segundos antes de la proxima verificacion
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
