@@ -40,8 +40,8 @@ public class ProcesoLE implements Runnable{
 
             tamanioTabla = bd.obtenerTamanio(table_id); // obtengo el tamaño de la tabla
 
-            if (tamanioTabla == 0) { // si la tabla está vacía no hay registros para leer
-                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+            if (tamanioTabla <= 0) { // si la tabla está vacía no hay registros para leer
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
             }else{ // elijo una fila al azar para leer
                 row_id = rand.nextInt(tamanioTabla);
                 this.leer(table_id, row_id);
@@ -63,8 +63,8 @@ public class ProcesoLE implements Runnable{
             Orquestador.escritura.acquireUninterruptibly(); // escritor pide permiso para entrar (bloquea si hay lectores u otro escritor)
             // ---- Sección crítica de escritura ----
             tamanioTabla = bd.obtenerTamanio(table_id);
-            if (tamanioTabla == 0) {
-                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+            if (tamanioTabla <= 0) {
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
             }else{
                 row_id = rand.nextInt(tamanioTabla);
                 this.escribir(table_id, row_id, column_id, nuevoValor);
@@ -101,8 +101,8 @@ public class ProcesoLE implements Runnable{
             // ---- Sección crítica de escritura ----
 
             tamanioTabla = bd.obtenerTamanio(table_id);
-            if (tamanioTabla == 0) {
-                System.out.println(Thread.currentThread().getName()+": La tabla "+table_id+" está vacía, no hay registros.");
+            if (tamanioTabla <= 0) {
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
             }else{
                 row_id = rand.nextInt(tamanioTabla);
                 this.eliminar(table_id, row_id);
@@ -128,7 +128,6 @@ public class ProcesoLE implements Runnable{
     }
 
     private void liberarPermisosParaEscritura(){
-        // System.out.println(bd);
         Orquestador.mutexEscritura.acquireUninterruptibly();
         Orquestador.cantidadEscritores--;
         if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores

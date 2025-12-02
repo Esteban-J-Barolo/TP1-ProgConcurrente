@@ -1,12 +1,9 @@
 import java.util.ArrayList;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class BaseDeDatos {
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
-
-	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 	public void randomDelay(float min, float max){
 		int random = (int)(max * Math.random() + min);
@@ -18,38 +15,23 @@ public class BaseDeDatos {
 	}
 
 	public void actualizar(int tabla, int column, int id, Integer valor){
-        lock.writeLock().lock();
-        try {
-            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
-            for (ArrayList<Integer> fila : tablaRef) {
-                if (fila.get(0) == id) {
-                    fila.set(column, valor);
-                    break;
-                }
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		for (ArrayList<Integer> fila : tablaRef) {
+			if (fila.get(0) == id) {
+				fila.set(column, valor);
+				break;
+			}
+		}
 	}
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
-        lock.writeLock().lock();
-        try {
-            if (tabla == 0) tabla1.add(registro);
-            else tabla2.add(registro);
-        } finally {
-            lock.writeLock().unlock();
-        }
+		if (tabla == 0) tabla1.add(registro);
+		else tabla2.add(registro);
 	}
 	
 	public void borrar(int tabla, int id){
-        lock.writeLock().lock();
-        try {
-            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
-            tablaRef.removeIf(fila -> fila.get(0) == id);
-        } finally {
-            lock.writeLock().unlock();
-        }
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		tablaRef.removeIf(fila -> fila.get(0) == id);
 	}
 
 	public void drop(int tabla){
@@ -61,18 +43,13 @@ public class BaseDeDatos {
 	}
 
 	public ArrayList<Integer> leer(int tabla, int id){
-        lock.readLock().lock();
-        try {
-            ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
-            for (ArrayList<Integer> fila : tablaRef) {
-                if (fila.get(0) == id) {
-                    return new ArrayList<>(fila); // copia defensiva
-                }
-            }
-            return new ArrayList<>();
-        } finally {
-            lock.readLock().unlock();
-        }
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		for (ArrayList<Integer> fila : tablaRef) {
+			if (fila.get(0) == id) {
+				return new ArrayList<>(fila); // copia defensiva
+			}
+		}
+		return new ArrayList<>();
 	}
 
 	public ArrayList<Integer> leer_fila(int tabla, int id){

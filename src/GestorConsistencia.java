@@ -23,6 +23,11 @@ public class GestorConsistencia implements Runnable {
 
             ArrayList<Integer> filasEliminar = chequeo_de_consistencia_lectura();
 
+            if(filasEliminar.isEmpty()){
+                System.out.println("Fin chequeo de consistencia");
+                System.out.println(bd);
+            }
+
             Orquestador.mutexLectura.acquireUninterruptibly(); // protege la variable cantidadLectores
             Orquestador.cantidadLectores--;
             if (Orquestador.cantidadLectores == 0) Orquestador.escritura.release(); // último lector libera escritores
@@ -44,6 +49,9 @@ public class GestorConsistencia implements Runnable {
 
                 eliminar_filas_inconsistentes(filasEliminar);
 
+                System.out.println("Fin chequeo de consistencia");
+                System.out.println(bd);
+
                 Orquestador.escritura.release();
 
                 Orquestador.mutexEscritura.acquireUninterruptibly();
@@ -52,11 +60,9 @@ public class GestorConsistencia implements Runnable {
                 Orquestador.mutexEscritura.release();
             }
 
-            System.out.println("Fin chequeo de consistencia");
-            System.out.println(bd);
             
             try {
-                Thread.sleep(5000); // espera 10 segundos antes de la proxima verificacion
+                Thread.sleep(1000); // espera 10 segundos antes de la proxima verificacion
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
