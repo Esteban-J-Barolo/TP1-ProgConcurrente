@@ -171,7 +171,7 @@ public class ProcesoLE implements Runnable{
     }
     private void eliminar(int table_id, int row_id){
         bd.borrar(table_id, row_id);
-        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+row_id+". Registro eliminado de la tabla "+table_id);
+        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+row_id+". Registro eliminado de la tabla "+(table_id+1));
     }
     
 }

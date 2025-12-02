@@ -31,7 +31,7 @@ public class BaseDeDatos {
 	
 	public void borrar(int tabla, int id){
 		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
-		tablaRef.removeIf(fila -> fila.get(0) == id);
+		tablaRef.remove(id);
 	}
 
 	public void drop(int tabla){

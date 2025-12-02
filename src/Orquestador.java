@@ -135,8 +135,8 @@ public class Orquestador {
 	public static Accion elegirAccion(){
 		double rand = Math.random();
 		if(rand < 0.40) return Accion.LECTURA;
-		else if(rand < 0.50) return Accion.ESCRITURA;
-		else if(rand < 0.90) return Accion.INSERCION;
+		else if(rand < 0.60) return Accion.ESCRITURA;
+		else if(rand < 0.80) return Accion.INSERCION;
 		else return Accion.ELIMINACION;
 	}
 	
