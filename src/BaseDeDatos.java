@@ -4,6 +4,8 @@ public class BaseDeDatos {
 	
 	private final ArrayList<ArrayList<Integer>> tabla1 = new ArrayList<>();
 	private final ArrayList<ArrayList<Integer>> tabla2 = new ArrayList<>();
+	private int nextIdTabla1 = 0;
+	private int nextIdTabla2 = 0;
 
 	public void randomDelay(float min, float max){
 		int random = (int)(max * Math.random() + min);
@@ -15,43 +17,28 @@ public class BaseDeDatos {
 	}
 
 	public void actualizar(int tabla, int column, int id, Integer valor){
-		if (tabla == 0){
-			tabla1.stream()
-					.filter(fila -> fila.get(0) == id)
-					.findFirst()
-					.ifPresent(fila -> fila.set(column, valor));
-		}else{
-			tabla2.stream()
-					.filter(fila -> fila.get(0) == id)
-					.findFirst()
-					.ifPresent(fila -> fila.set(1, valor));
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		for (ArrayList<Integer> fila : tablaRef) {
+			if (fila.get(0) == id) {
+				fila.set(column, valor);
+				break;
+			}
 		}
 	}
 
 	public void insertar(int tabla, ArrayList<Integer> registro){
 		if (tabla == 0){
 			tabla1.add(registro);
+			nextIdTabla1++;
 		}else{
 			tabla2.add(registro);
-		}
+			nextIdTabla2++;
+		} 
 	}
 	
 	public void borrar(int tabla, int id){
-		if (tabla == 0){
-			for(ArrayList<Integer> fila : tabla1) {
-				if (fila.get(0) == id) {
-					tabla1.remove(fila);
-					break;
-				}
-			}
-		}else{
-			for(ArrayList<Integer> fila : tabla2) {
-				if (fila.get(0) == id) {
-					tabla2.remove(fila);
-					break;
-				}
-			}
-		}
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		tablaRef.remove(id);
 	}
 
 	public void drop(int tabla){
@@ -63,20 +50,12 @@ public class BaseDeDatos {
 	}
 
 	public ArrayList<Integer> leer(int tabla, int id){
-		if (tabla == 0){
-			for(ArrayList<Integer> fila : tabla1) {
-				if (fila.get(0) == id) {
-					return fila;
-				}
-			}
-		}else{
-			for(ArrayList<Integer> fila : tabla2) {
-				if (fila.get(0) == id) {
-					return fila;
-				}
+		ArrayList<ArrayList<Integer>> tablaRef = (tabla == 0) ? tabla1 : tabla2;
+		for (ArrayList<Integer> fila : tablaRef) {
+			if (fila.get(0) == id) {
+				return new ArrayList<>(fila);
 			}
 		}
-		
 		return new ArrayList<>();
 	}
 
@@ -97,6 +76,14 @@ public class BaseDeDatos {
 			return tabla1.size();
 		}else{
 			return tabla2.size();
+		}
+	}
+
+	public int obtenerIds(int tabla){
+		if (tabla == 0){
+			return nextIdTabla1;
+		}else{
+			return nextIdTabla2;
 		}
 	}
 

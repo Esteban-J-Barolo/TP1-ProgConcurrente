@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class GestorConsistencia implements Runnable {
 
@@ -11,15 +12,57 @@ public class GestorConsistencia implements Runnable {
     public void run(){
 
         while (true) {
-
-            Orquestador.permisoLectura.acquireUninterruptibly();
-
-            chequeo_de_consistencia(bd);
-
+            Orquestador.mutexPriEscritores.acquireUninterruptibly(); // evita starvation de escritores
+            Orquestador.permisoLectura.acquireUninterruptibly(); // pide permiso para leer
+            Orquestador.mutexLectura.acquireUninterruptibly(); // protege la variable cantidadLectores
+            Orquestador.cantidadLectores++;
+            if (Orquestador.cantidadLectores == 1) Orquestador.escritura.acquireUninterruptibly(); // primer lector bloquea escritores
+            Orquestador.mutexLectura.release();
             Orquestador.permisoLectura.release();
+            Orquestador.mutexPriEscritores.release();
+
+            ArrayList<Integer> filasEliminar = chequeo_de_consistencia_lectura();
+
+            if(filasEliminar.isEmpty()){
+                System.out.println("Fin chequeo de consistencia");
+                System.out.println(bd);
+            }
+
+            Orquestador.mutexLectura.acquireUninterruptibly(); // protege la variable cantidadLectores
+            Orquestador.cantidadLectores--;
+            if (Orquestador.cantidadLectores == 0) Orquestador.escritura.release(); // último lector libera escritores
+            Orquestador.mutexLectura.release();
+
+            
+            if(!filasEliminar.isEmpty()){
+                
+                Orquestador.mutexPriBackUp.acquireUninterruptibly(); // evita starvation de backup
+                Orquestador.permisoEscritura.acquireUninterruptibly(); // pide permiso para escribir
+                Orquestador.mutexEscritura.acquireUninterruptibly(); // protege la variable cantidadEscritores
+                Orquestador.cantidadEscritores++;
+                if (Orquestador.cantidadEscritores == 1) Orquestador.permisoLectura.acquireUninterruptibly(); // primer escritor bloquea lectores
+                Orquestador.mutexEscritura.release();
+                Orquestador.permisoEscritura.release();
+                Orquestador.mutexPriBackUp.release();
+
+                Orquestador.escritura.acquireUninterruptibly(); // pide permiso para escribir
+
+                eliminar_filas_inconsistentes(filasEliminar);
+
+                System.out.println("Fin chequeo de consistencia");
+                System.out.println(bd);
+
+                Orquestador.escritura.release();
+
+                Orquestador.mutexEscritura.acquireUninterruptibly();
+                Orquestador.cantidadEscritores--;
+                if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
+                Orquestador.mutexEscritura.release();
+            }
+
             
             try {
-                Thread.sleep(5000); // espera 10 segundos antes de la proxima verificacion
+                Thread.sleep(10000); // espera 10 segundos antes de la proxima verificacion
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -28,7 +71,7 @@ public class GestorConsistencia implements Runnable {
     
     }
 
-    private static void chequeo_de_consistencia(BaseDeDatos bd){
+    private ArrayList<Integer> chequeo_de_consistencia_lectura(){
         System.out.println("Iniciando chequeo de consistencia ...");
         System.out.println(bd);
 
@@ -63,19 +106,15 @@ public class GestorConsistencia implements Runnable {
         }else{
             System.out.println("Chequeo de consistencia: La tabla 1 está vacía, no hay registros.");
         }
-        if(!filasEliminar.isEmpty()){
-            for(int fila: filasEliminar){
-                Orquestador.escritura.acquireUninterruptibly();
-                bd.borrar(tabla1, fila);
-                Orquestador.escritura.release();
-                System.out.println("Registro "+fila+" eliminado de tabla 1 por inconsistencia.");
-            }
+        return filasEliminar;
+    }
+
+    private void eliminar_filas_inconsistentes(ArrayList<Integer> filasEliminar){
+        Collections.sort(filasEliminar, Collections.reverseOrder());
+        for(int fila: filasEliminar){
+            int tabla1 = 0; // tabla 1
+            bd.borrar(tabla1, fila);
+            System.out.println("Registro "+fila+" eliminado de tabla 1 por inconsistencia.");
         }
-
-        try{
-            Thread.sleep(500);
-        }catch(Exception e){}
-
-        System.out.println("Fin chequeo de consistencia");
     }
 }

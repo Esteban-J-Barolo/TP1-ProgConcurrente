@@ -26,66 +26,57 @@ public class ProcesoLE implements Runnable{
         int tamanioTabla;
         int row_id;
         if(accion == Accion.LECTURA){
-            Orquestador.permisoLectura.acquireUninterruptibly(); // lector pide permiso para entrar (bloquea si hay escritores)
-            Orquestador.lectoresMaximos.acquireUninterruptibly(); // ocupa un cupo de lectura
-            Orquestador.mutex.acquireUninterruptibly();
+            Orquestador.mutexPriEscritores.acquireUninterruptibly(); // evita starvation de escritores
+            Orquestador.permisoLectura.acquireUninterruptibly(); // pide permiso para leer
+            Orquestador.mutexLectura.acquireUninterruptibly(); // protege la variable cantidadLectores
             Orquestador.cantidadLectores++;
-            if (Orquestador.cantidadLectores == 1) {
-                Orquestador.mutex.release();
-                Orquestador.escritura.acquireUninterruptibly(); // primer lector bloquea escritores
-            }else{
-                Orquestador.mutex.release();
-            }
-            
+            if (Orquestador.cantidadLectores == 1) Orquestador.escritura.acquireUninterruptibly(); // primer lector bloquea escritores
+            Orquestador.mutexLectura.release();
             Orquestador.permisoLectura.release();
+            Orquestador.mutexPriEscritores.release();
 
             // ---- Sección crítica de lectura ----
+            Orquestador.lectoresMaximos.acquireUninterruptibly(); // pide un cupo para leer
 
-            tamanioTabla = bd.obtenerTamanio(table_id);
-            row_id = rand.nextInt(tamanioTabla);
-            this.leer(table_id, row_id);
-            
+            tamanioTabla = bd.obtenerTamanio(table_id); // obtengo el tamaño de la tabla
+
+            if (tamanioTabla <= 0) { // si la tabla está vacía no hay registros para leer
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
+            }else{ // elijo una fila al azar para leer
+                row_id = rand.nextInt(tamanioTabla);
+                this.leer(table_id, row_id);
+                System.out.println(bd);
+            }
+
+            Orquestador.lectoresMaximos.release(); // libera el cupo al salir
             // ---- Fin sección crítica de lectura ----
 
-            Orquestador.mutex.acquireUninterruptibly();
+            Orquestador.mutexLectura.acquireUninterruptibly(); // protege la variable cantidadLectores
             Orquestador.cantidadLectores--;
             if (Orquestador.cantidadLectores == 0) Orquestador.escritura.release(); // último lector libera escritores
-            Orquestador.mutex.release();
-            Orquestador.lectoresMaximos.release(); // libera el cupo al salir
+            Orquestador.mutexLectura.release();
 
         }else if(accion == Accion.ESCRITURA){
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores++;
-            if (Orquestador.cantidadEscritores == 1) {
-                Orquestador.mutex.release();
-                Orquestador.permisoLectura.acquireUninterruptibly(); // primer escritor bloquea lectores
-            }else {
-                Orquestador.mutex.release();
-            }
 
-            Orquestador.escritura.acquireUninterruptibly(); // escritor pide permiso para entrar (bloquea si hay lectores)
+            this.tomarPermisosParaEscritura();
 
+            Orquestador.escritura.acquireUninterruptibly(); // escritor pide permiso para entrar (bloquea si hay lectores u otro escritor)
             // ---- Sección crítica de escritura ----
-
             tamanioTabla = bd.obtenerTamanio(table_id);
-            row_id = rand.nextInt(tamanioTabla);
-            this.escribir(table_id, row_id, column_id, nuevoValor);
+            if (tamanioTabla <= 0) {
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
+            }else{
+                int idsTabla = bd.obtenerIds(table_id);
+                row_id = rand.nextInt(idsTabla);
+                this.escribir(table_id, row_id);
+            }
             Orquestador.escritura.release(); // libera el permiso al salir
 
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores--;
-            if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
-            Orquestador.mutex.release();
+            this.liberarPermisosParaEscritura();
 
         }else if(accion == Accion.INSERCION){
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores++;
-            if (Orquestador.cantidadEscritores == 1) {
-                Orquestador.mutex.release();
-                Orquestador.permisoLectura.acquireUninterruptibly(); // primer escritor bloquea lectores
-            }else {
-                Orquestador.mutex.release();
-            }
+
+            this.tomarPermisosParaEscritura();
 
             Orquestador.escritura.acquireUninterruptibly(); // escritor pide permiso para entrar (bloquea si hay lectores)
 
@@ -101,56 +92,66 @@ public class ProcesoLE implements Runnable{
 
             Orquestador.escritura.release(); // libera el permiso al salir
 
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores--;
-            if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
-            Orquestador.mutex.release();
+            this.liberarPermisosParaEscritura();
 
         }else if(accion == Accion.ELIMINACION){
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores++;
-            if (Orquestador.cantidadEscritores == 1) {
-                Orquestador.mutex.release();
-                Orquestador.permisoLectura.acquireUninterruptibly(); // primer escritor bloquea lectores
-            }else {
-                Orquestador.mutex.release();
-            }
+
+            this.tomarPermisosParaEscritura();
 
             Orquestador.escritura.acquireUninterruptibly(); // escritor pide permiso para entrar (bloquea si hay lectores)
-
             // ---- Sección crítica de escritura ----
 
             tamanioTabla = bd.obtenerTamanio(table_id);
-            row_id = rand.nextInt(tamanioTabla);
-            this.eliminar(table_id, row_id);
+            if (tamanioTabla <= 0) {
+                System.out.println(Thread.currentThread().getName()+": La tabla "+(table_id+1)+" está vacía, no hay registros.");
+            }else{
+                row_id = rand.nextInt(tamanioTabla);
+                this.eliminar(table_id, row_id);
+            }
             
             Orquestador.escritura.release(); // libera el permiso al salir
 
-            Orquestador.mutex.acquireUninterruptibly();
-            Orquestador.cantidadEscritores--;
-            if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
-            Orquestador.mutex.release();
+            this.liberarPermisosParaEscritura();
 
         }
+
+    }
+
+    private void tomarPermisosParaEscritura(){
+        Orquestador.mutexPriBackUp.acquireUninterruptibly(); // evita starvation de backup
+        Orquestador.permisoEscritura.acquireUninterruptibly(); // pide permiso para escribir
+        Orquestador.mutexEscritura.acquireUninterruptibly(); // protege la variable cantidadEscritores
+        Orquestador.cantidadEscritores++;
+        if (Orquestador.cantidadEscritores == 1) Orquestador.permisoLectura.acquireUninterruptibly(); // primer escritor bloquea lectores
+        Orquestador.mutexEscritura.release();
+        Orquestador.permisoEscritura.release();
+        Orquestador.mutexPriBackUp.release();
+    }
+
+    private void liberarPermisosParaEscritura(){
+        Orquestador.mutexEscritura.acquireUninterruptibly();
+        Orquestador.cantidadEscritores--;
+        if (Orquestador.cantidadEscritores == 0) Orquestador.permisoLectura.release(); // último escritor libera lectores
+        Orquestador.mutexEscritura.release();
     }
 
     private void leer(int table_id, int row_id){
         ArrayList<Integer> valor = bd.leer(table_id, row_id);
         if(valor.isEmpty()){
-            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe, tabla "+table_id);
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" No existe, tabla "+(table_id+1));
         }else{
-            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" tabla "+table_id+" Valor leido: "+valor.get(1));
+            System.out.println(Thread.currentThread().getName()+": Lectura | Row: "+ row_id+" tabla "+(table_id+1)+" Valor leido: "+((valor.size() == 3) ? valor.get(2) : valor.get(1)));
         }
     }
 
-    private void escribir(int table_id, int row_id, int column_id, int nuevoValor){
+    private void escribir(int table_id, int row_id){
         if(bd.leer(table_id, row_id).isEmpty()){
-            System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id+" No existe, tabla "+table_id);
+            System.out.println(Thread.currentThread().getName()+": Escritura | Id: "+ row_id+" No existe, tabla "+(table_id+1));
 
             return;
         }
         bd.actualizar(table_id, column_id, row_id, nuevoValor);
-        System.out.println(Thread.currentThread().getName()+": Escritura | Row: "+ row_id +" Nuevo valor: "+nuevoValor+", tabla "+table_id);
+        System.out.println(Thread.currentThread().getName()+": Escritura | Id: "+ row_id +" Nuevo valor: "+nuevoValor+", tabla "+(table_id+1));
     }
     
     private void insertar_en_tabla1(int row_id, int nuevoValor, int nuevoValorForeingKey){
@@ -171,7 +172,7 @@ public class ProcesoLE implements Runnable{
     }
     private void eliminar(int table_id, int row_id){
         bd.borrar(table_id, row_id);
-        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+row_id+". Registro eliminado de la tabla "+table_id);
+        System.out.println(Thread.currentThread().getName()+": Eliminación | Fila: "+(row_id+1)+". Registro eliminado de la tabla "+(table_id+1));
     }
     
 }
